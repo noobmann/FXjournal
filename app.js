@@ -2990,15 +2990,12 @@ function renderMHOverlaps(){
 
             const sessionEnd=new Date(now.toLocaleString('en-US',{timeZone:sessionLocalTz}));
             sessionEnd.setHours(eh,em,0,0);
+            
             // Convert to user timezone for display
-            const startOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
-            const startTimeStr=sessionStart.toLocaleTimeString('en-US',startOpts);
-            const endTimeStr=sessionEnd.toLocaleTimeString('en-US',endOpts);
-            
-            const startOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
-            const endOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
-            const startTimeStr=startUtc.toLocaleTimeString('en-US',startOpts);
-            
+            const dispOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
+            const startTimeStr=sessionStart.toLocaleTimeString('en-US',dispOpts);
+            const endTimeStr=sessionEnd.toLocaleTimeString('en-US',dispOpts);
+
             const [startH,startM]=startTimeStr.split(':').map(Number);
             const [endH,endM]=endTimeStr.split(':').map(Number);
             
