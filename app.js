@@ -106,9 +106,9 @@ function confirmAction(title,msg,cb){
 // ═══════════════════════════════════════════════════════════
 // NAV
 // ═══════════════════════════════════════════════════════════
-const TITLES={dash:'Dashboard',trades:'Trades',journal:'Journal',notes:'Notes',analytics:'Performance Analytics',accounts:'Accounts',rules:'Rules & Config',settings:'Settings',report:'AI Report','market-hours':'Market Hours Tracker'};
+const TITLES={dash:'Dashboard',trades:'Trades',journal:'Journal',notes:'Notes',analytics:'Performance Analytics',accounts:'Accounts',rules:'Rules & Config',settings:'Settings',report:'AI Report','market-hours':'Market Hours Tracker','position-calc':'Position Size Calculator','gain-loss-calc':'Gain/Loss Calculator',instructions:'How to Use FX Journal'};
 function nav(p){
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.nav-item,.nav-subitem').forEach(n=>n.classList.remove('active'));
   document.querySelector(`[data-p="${p}"]`)?.classList.add('active');
   document.querySelectorAll('.page,.page-fill').forEach(pg=>pg.classList.remove('active'));
   document.getElementById('page-'+p)?.classList.add('active');
@@ -123,8 +123,17 @@ function nav(p){
   else if(p==='notes')renderNotes();
   else if(p==='report')loadAISettings();
   else if(p==='market-hours')renderMarketHours();
+  else if(p==='position-calc')initPositionCalc();
+  else if(p==='gain-loss-calc')initGainLossCalc();
 }
-document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>nav(n.dataset.p)));
+document.querySelectorAll('.nav-item[data-p]').forEach(n=>n.addEventListener('click',()=>nav(n.dataset.p)));
+document.querySelectorAll('.nav-subitem').forEach(n=>n.addEventListener('click',()=>nav(n.dataset.p)));
+
+// Dropdown toggle for Tools menu
+document.querySelector('[data-drop="tools"]')?.addEventListener('click',function(){
+  this.classList.toggle('active');
+  document.getElementById('submenu-tools')?.classList.toggle('open');
+});
 
 // ═══════════════════════════════════════════════════════════
 // CLOCK & SESSIONS
@@ -2874,6 +2883,145 @@ setInterval(()=>{
     renderMarketHours();
   }
 },1000);
+
+// ═══════════════════════════════════════════════════════════
+// POSITION SIZE CALCULATOR
+// ═══════════════════════════════════════════════════════════
+function initPositionCalc(){
+  // Just ensure the page is ready, values are already in HTML
+}
+
+function calculatePosition(){
+  const pair=document.getElementById('pos-pair').value;
+  const balance=parseFloat(document.getElementById('pos-balance').value)||0;
+  const riskPct=parseFloat(document.getElementById('pos-risk').value)||0;
+  const entry=parseFloat(document.getElementById('pos-entry').value)||0;
+  const slPips=parseFloat(document.getElementById('pos-sl').value)||0;
+  
+  if(!balance||!riskPct||!entry||!slPips){
+    toast('Please fill all fields','','warn');
+    return;
+  }
+  
+  const riskAmount=balance*(riskPct/100);
+  let pipValue,pipSize;
+  
+  // Determine pip size based on pair
+  if(pair.includes('JPY')){
+    pipSize=0.01;
+  }else if(pair==='XAUUSD'){
+    pipSize=0.10; // Gold pip
+  }else if(pair==='XAGUSD'){
+    pipSize=0.01; // Silver pip
+  }else if(['BTCUSD','ETHUSD'].includes(pair)){
+    pipSize=1.0; // Crypto
+  }else{
+    pipSize=0.0001; // Standard forex
+  }
+  
+  // Calculate pip value per standard lot (100,000 units)
+  if(pair.includes('JPY')){
+    pipValue=(pipSize*100000)/entry; // JPY pairs quote in JPY
+  }else if(pair==='XAUUSD'){
+    pipValue=10.0; // Gold: $1 per 0.10 move per lot
+  }else if(pair==='XAGUSD'){
+    pipValue=50.0; // Silver: $0.50 per 0.01 move per lot
+  }else if(pair.includes('USD')&&!pair.startsWith('USD')){
+    pipValue=pipSize*100000; // EURUSD, GBPUSD etc - pip value in USD
+  }else if(pair.startsWith('USD')){
+    pipValue=pipSize*100000/entry; // USDCHF, USDCAD
+  }else{
+    pipValue=pipSize*100000; // Default
+  }
+  
+  // Calculate position size
+  const lots=riskAmount/(slPips*pipValue);
+  
+  // Display results
+  document.getElementById('pos-lots').textContent=lots.toFixed(2);
+  document.getElementById('pos-risk-amt').textContent='$'+riskAmount.toFixed(2);
+  document.getElementById('pos-pip-value').textContent='$'+pipValue.toFixed(2);
+  document.getElementById('pos-result').style.display='block';
+  
+  toast('Position calculated successfully','','success');
+}
+
+// ═══════════════════════════════════════════════════════════
+// GAIN/LOSS CALCULATOR
+// ═══════════════════════════════════════════════════════════
+function initGainLossCalc(){
+  // Page is ready
+}
+
+function calculateGainLoss(){
+  const pair=document.getElementById('gl-pair').value;
+  const direction=document.getElementById('gl-direction').value;
+  const lots=parseFloat(document.getElementById('gl-lots').value)||0;
+  const entry=parseFloat(document.getElementById('gl-entry').value)||0;
+  const exit=parseFloat(document.getElementById('gl-exit').value)||0;
+  
+  if(!lots||!entry||!exit){
+    toast('Please fill all fields','','warn');
+    return;
+  }
+  
+  let pipSize;
+  if(pair.includes('JPY')){
+    pipSize=0.01;
+  }else if(pair==='XAUUSD'){
+    pipSize=0.10;
+  }else if(pair==='XAGUSD'){
+    pipSize=0.01;
+  }else if(['BTCUSD','ETHUSD'].includes(pair)){
+    pipSize=1.0;
+  }else{
+    pipSize=0.0001;
+  }
+  
+  // Calculate pips moved
+  let pipsMoved;
+  if(direction==='buy'){
+    pipsMoved=(exit-entry)/pipSize;
+  }else{
+    pipsMoved=(entry-exit)/pipSize;
+  }
+  
+  // Calculate pip value
+  let pipValue;
+  if(pair.includes('JPY')){
+    pipValue=(pipSize*100000)/entry;
+  }else if(pair==='XAUUSD'){
+    pipValue=10.0;
+  }else if(pair==='XAGUSD'){
+    pipValue=50.0;
+  }else if(pair.includes('USD')&&!pair.startsWith('USD')){
+    pipValue=pipSize*100000;
+  }else if(pair.startsWith('USD')){
+    pipValue=pipSize*100000/entry;
+  }else{
+    pipValue=pipSize*100000;
+  }
+  
+  // Calculate P&L
+  const pnl=pipsMoved*pipValue*lots;
+  const notionalValue=lots*100000*entry;
+  const returnPct=(pnl/notionalValue)*100;
+  
+  // Calculate R:R (assuming 1R = initial risk, use absolute value)
+  const rRatio=Math.abs(pnl)/(Math.abs(pnl)*0.5)||0; // Simplified
+  
+  // Display results
+  const pnlEl=document.getElementById('gl-pnl');
+  pnlEl.textContent=(pnl>=0?'+$':'-$')+Math.abs(pnl).toFixed(2);
+  pnlEl.style.color=pnl>=0?'var(--green2)':'var(--red2)';
+  
+  document.getElementById('gl-pips').textContent=Math.abs(pipsMoved).toFixed(1)+' pips';
+  document.getElementById('gl-return').textContent=returnPct.toFixed(2)+'%';
+  document.getElementById('gl-rr').textContent=(Math.abs(pnl)/100).toFixed(1)+':1';
+  document.getElementById('gl-result').style.display='block';
+  
+  toast('P&L calculated successfully','','success');
+}
 
 // ═══════════════════════════════════════════════════════════
 // INITIALIZATION

@@ -87,6 +87,14 @@ input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;appearance
 .nav-ic{font-size:14px;width:20px;text-align:center;flex-shrink:0;opacity:.8}
 .nav-item.active .nav-ic{opacity:1}
 .nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:8.5px;font-weight:700;padding:2px 6px;border-radius:99px;letter-spacing:.3px}
+.nav-dropdown .nav-arrow{font-size:8px;margin-left:auto;opacity:.6;transition:transform .2s}
+.nav-dropdown.active .nav-arrow{transform:rotate(180deg)}
+.nav-submenu{max-height:0;overflow:hidden;transition:max-height .25s ease;margin-left:12px;margin-top:4px}
+.nav-submenu.open{max-height:200px}
+.nav-subitem{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--rs);cursor:pointer;color:var(--t2);font-size:12.5px;font-weight:500;transition:all .15s ease;margin-bottom:2px}
+.nav-subitem:hover{background:rgba(255,255,255,0.03);color:var(--t0)}
+.nav-subitem.active{background:rgba(255,255,255,0.05);color:var(--t0);font-weight:600}
+.nav-subitem .nav-ic{font-size:13px;width:18px;text-align:center;flex-shrink:0;opacity:.8}
 .sb-foot{margin-top:auto;padding:12px;border-top:1px solid var(--border)}
 .user-row{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:var(--rs);transition:background .15s}
 .user-row:hover{background:var(--bg2)}
@@ -657,3 +665,11 @@ tbody td{padding:14px 16px;font-size:13px;color:var(--t1)}
 
 @media(max-width:900px){.mh-header{grid-template-columns:1fr}.mh-world-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){.mh-world-grid{grid-template-columns:1fr}.mh-overlap-grid{grid-template-columns:1fr}}
+
+/* ═══ INSTRUCTIONS PAGE ═══ */
+.inst-section{margin-bottom:24px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.inst-section:last-child{border-bottom:none;margin-bottom:0}
+.inst-title{font-size:15px;font-weight:700;color:var(--t0);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.inst-list{font-size:13.5px;color:var(--t1);line-height:1.7;padding-left:20px}
+.inst-list li{margin-bottom:8px}
+.inst-list strong{color:var(--t0);font-weight:600}

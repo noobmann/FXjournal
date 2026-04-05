@@ -39,13 +39,22 @@
     <div class="nav-lbl">Analysis</div>
     <div class="nav-item" data-p="analytics"><span class="nav-ic">▦</span>Performance</div>
     <div class="nav-item" data-p="report"><span class="nav-ic">🤖</span>AI Report</div>
-    <div class="nav-item" data-p="market-hours"><span class="nav-ic">🕐</span>Market Hours</div>
+  </div>
+  <div class="nav-sec">
+    <div class="nav-lbl">Tools</div>
+    <div class="nav-item nav-dropdown" data-drop="tools"><span class="nav-ic">🛠</span>Tools <span class="nav-arrow">▼</span></div>
+    <div class="nav-submenu" id="submenu-tools">
+      <div class="nav-subitem" data-p="market-hours"><span class="nav-ic">🕐</span>Market Hours</div>
+      <div class="nav-subitem" data-p="position-calc"><span class="nav-ic">📊</span>Position Calculator</div>
+      <div class="nav-subitem" data-p="gain-loss-calc"><span class="nav-ic">💹</span>Gain/Loss Calculator</div>
+    </div>
   </div>
   <div class="nav-sec">
     <div class="nav-lbl">Manage</div>
     <div class="nav-item" data-p="accounts"><span class="nav-ic">◉</span>Accounts</div>
     <div class="nav-item" data-p="rules"><span class="nav-ic">⚖</span>Rules <span class="nav-badge" id="rules-badge" style="display:none">!</span></div>
     <div class="nav-item" data-p="settings"><span class="nav-ic">⚙</span>Settings</div>
+    <div class="nav-item" data-p="instructions"><span class="nav-ic">📚</span>How to Use</div>
   </div>
   <div class="sb-foot">
     <div class="user-row">
@@ -576,6 +585,244 @@
           <button class="btn btn-s" onclick="exportCSV()">↓ Export CSV</button>
           <div class="div"></div>
           <button class="btn btn-d" onclick="clearAll()">⚠ Clear All Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ INSTRUCTIONS / HOW TO USE ═══ -->
+  <div class="page" id="page-instructions">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-h"><span class="card-t">📚 How to Use FX Journal for Profitable Trading</span></div>
+      <div class="card-b">
+        <div class="inst-section">
+          <div class="inst-title">🎯 Getting Started</div>
+          <ol class="inst-list">
+            <li><strong>Set up your account:</strong> Go to Accounts and add your trading account with initial balance.</li>
+            <li><strong>Configure your settings:</strong> Set your timezone, currency, and trading style in Settings.</li>
+            <li><strong>Define your rules:</strong> Add your trading rules in the Rules section to track discipline.</li>
+            <li><strong>Customize sessions:</strong> Adjust market sessions if needed to match your trading hours.</li>
+          </ol>
+        </div>
+        <div class="inst-section">
+          <div class="inst-title">📝 Logging Trades Properly</div>
+          <ol class="inst-list">
+            <li><strong>Pre-trade checklist:</strong> Always fill out the checklist before entering a trade to ensure you're following your plan.</li>
+            <li><strong>Record entry details:</strong> Enter pair, direction, session, setup type, entry price, stop loss, and take profit.</li>
+            <li><strong>Add position size:</strong> Use the Position Calculator tool to determine proper lot size based on your risk.</li>
+            <li><strong>Update after exit:</strong> Once the trade closes, update the exit price and add notes about what happened.</li>
+            <li><strong>Journal every trade:</strong> Write detailed analysis in the Journal tab - what worked, what didn't, emotional state.</li>
+          </ol>
+        </div>
+        <div class="inst-section">
+          <div class="inst-title">💡 Using Tools for Better Decisions</div>
+          <ul class="inst-list">
+            <li><strong>Market Hours Tracker:</strong> Check active sessions and overlaps to trade during high-volume periods.</li>
+            <li><strong>Position Size Calculator:</strong> Never guess lot sizes - calculate based on your stop loss and risk percentage.</li>
+            <li><strong>Gain/Loss Calculator:</strong> Plan your trades by calculating potential profit/loss before entering.</li>
+          </ul>
+        </div>
+        <div class="inst-section">
+          <div class="inst-title">📊 Analyzing Your Performance</div>
+          <ol class="inst-list">
+            <li><strong>Review Dashboard daily:</strong> Check your equity curve, win rate, and recent trades.</li>
+            <li><strong>Study Analytics weekly:</strong> Identify which pairs, sessions, and setups work best for you.</li>
+            <li><strong>Use AI Report:</strong> Get unbiased analysis of your trading patterns and personalized recommendations.</li>
+            <li><strong>Track consistency:</strong> Look at the calendar heatmap to see your trading consistency.</li>
+          </ol>
+        </div>
+        <div class="inst-section">
+          <div class="inst-title">🧠 Building Profitable Habits</div>
+          <ul class="inst-list">
+            <li><strong>Risk management first:</strong> Never risk more than 1-2% per trade. Use the calculator religiously.</li>
+            <li><strong>Trade your edge:</strong> Only take setups that match your proven strategy. Avoid FOMO trades.</li>
+            <li><strong>Review losers carefully:</strong> Losing trades teach more than winners. Journal them thoroughly.</li>
+            <li><strong>Track emotions:</strong> Note your emotional state before, during, and after each trade.</li>
+            <li><strong>Follow your rules:</strong> The Rules tracker will alert you when you break your own guidelines.</li>
+            <li><strong>Be consistent:</strong> Trade the same sessions, same pairs, same setups until you're profitable.</li>
+            <li><strong>Take breaks:</strong> After 2 consecutive losses, stop trading. Review and reset.</li>
+          </ul>
+        </div>
+        <div class="inst-section">
+          <div class="inst-title">⚠ Common Mistakes to Avoid</div>
+          <ul class="inst-list" style="color:var(--red2)">
+            <li>❌ Overtrading - taking too many trades or trading outside your session</li>
+            <li>❌ Revenge trading - trying to win back losses immediately</li>
+            <li>❌ Moving stop losses - always respect your predefined risk</li>
+            <li>❌ Skipping journal entries - incomplete data leads to wrong conclusions</li>
+            <li>❌ Ignoring the dashboard warnings - pay attention to declining metrics</li>
+            <li>❌ Trading without a setup - every trade must have a valid reason</li>
+          </ul>
+        </div>
+        <div class="highlight" style="margin-top:20px;background:linear-gradient(135deg,rgba(29,78,216,0.1),rgba(147,51,234,0.1));border-color:var(--accent)">
+          💡 <strong>Pro Tip:</strong> The key to profitability is not finding a "holy grail" strategy - it's consistent execution of a simple edge, proper risk management, and continuous improvement through honest self-review. Use this journal religiously, and you'll see patterns that transform your trading.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ POSITION SIZE CALCULATOR ═══ -->
+  <div class="page" id="page-position-calc">
+    <div class="g2">
+      <div class="card">
+        <div class="card-h"><span class="card-t">📊 Position Size Calculator</span></div>
+        <div class="card-b">
+          <div class="fg">
+            <label class="fl">Currency Pair</label>
+            <select class="fs" id="pos-pair" onchange="updatePairInfo()">
+              <option value="EURUSD">EUR/USD</option>
+              <option value="GBPUSD">GBP/USD</option>
+              <option value="USDJPY">USD/JPY</option>
+              <option value="USDCHF">USD/CHF</option>
+              <option value="AUDUSD">AUD/USD</option>
+              <option value="USDCAD">USD/CAD</option>
+              <option value="NZDUSD">NZD/USD</option>
+              <option value="XAUUSD">XAU/USD (Gold)</option>
+              <option value="XAGUSD">XAG/USD (Silver)</option>
+              <option value="BTCUSD">BTC/USD</option>
+              <option value="ETHUSD">ETH/USD</option>
+            </select>
+          </div>
+          <div class="fr2">
+            <div class="fg">
+              <label class="fl">Account Balance ($)</label>
+              <input type="number" class="fi" id="pos-balance" placeholder="10000" value="10000">
+            </div>
+            <div class="fg">
+              <label class="fl">Risk (%)</label>
+              <input type="number" class="fi" id="pos-risk" placeholder="1" value="1" step="0.1">
+            </div>
+          </div>
+          <div class="fr2">
+            <div class="fg">
+              <label class="fl">Entry Price</label>
+              <input type="number" class="fi" id="pos-entry" placeholder="1.0850" step="0.0001">
+            </div>
+            <div class="fg">
+              <label class="fl">Stop Loss (pips)</label>
+              <input type="number" class="fi" id="pos-sl" placeholder="20" step="0.1">
+            </div>
+          </div>
+          <button class="btn btn-p" onclick="calculatePosition()" style="width:100%;margin-top:10px">Calculate Position Size</button>
+          
+          <div id="pos-result" style="margin-top:20px;display:none">
+            <div class="highlight" style="text-align:center;padding:20px">
+              <div style="font-size:12px;color:var(--t2);margin-bottom:8px">Recommended Position Size</div>
+              <div style="font-size:36px;font-weight:800;color:var(--accent)" id="pos-lots">0.00</div>
+              <div style="font-size:14px;color:var(--t2);margin-top:4px">Lots</div>
+              <div style="display:flex;justify-content:center;gap:24px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+                <div>
+                  <div style="font-size:11px;color:var(--t3)">Risk Amount</div>
+                  <div style="font-size:18px;font-weight:700;color:var(--red2)" id="pos-risk-amt">$0.00</div>
+                </div>
+                <div>
+                  <div style="font-size:11px;color:var(--t3)">Pip Value</div>
+                  <div style="font-size:18px;font-weight:700;color:var(--t0)" id="pos-pip-value">$0.00</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><span class="card-t">ℹ️ How to Use</span></div>
+        <div class="card-b" style="font-size:13px;color:var(--t1);line-height:1.7">
+          <p><strong>Position sizing is critical for risk management.</strong> Never guess your lot size - always calculate based on your stop loss distance.</p>
+          <ul style="padding-left:20px;margin-top:10px">
+            <li>Enter your account balance and the percentage you want to risk (typically 1-2%)</li>
+            <li>Input your planned entry price and stop loss in pips</li>
+            <li>The calculator determines the exact lot size to keep your risk within limits</li>
+            <li>For JPY pairs, pip calculation is automatic (0.01 instead of 0.0001)</li>
+            <li>For Gold/Silver, calculations adjust for their unique pip values</li>
+          </ul>
+          <div class="highlight" style="margin-top:12px;background:var(--green-d);border-color:var(--green)">
+            💡 <strong>Rule:</strong> If the calculated position seems too large, reduce your risk % or widen your stop loss. Never force a trade with improper sizing.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ GAIN/LOSS CALCULATOR ═══ -->
+  <div class="page" id="page-gain-loss-calc">
+    <div class="g2">
+      <div class="card">
+        <div class="card-h"><span class="card-t">💹 Gain/Loss Calculator</span></div>
+        <div class="card-b">
+          <div class="fg">
+            <label class="fl">Currency Pair</label>
+            <select class="fs" id="gl-pair" onchange="updateGLPairInfo()">
+              <option value="EURUSD">EUR/USD</option>
+              <option value="GBPUSD">GBP/USD</option>
+              <option value="USDJPY">USD/JPY</option>
+              <option value="USDCHF">USD/CHF</option>
+              <option value="AUDUSD">AUD/USD</option>
+              <option value="USDCAD">USD/CAD</option>
+              <option value="NZDUSD">NZD/USD</option>
+              <option value="XAUUSD">XAU/USD (Gold)</option>
+              <option value="XAGUSD">XAG/USD (Silver)</option>
+              <option value="BTCUSD">BTC/USD</option>
+              <option value="ETHUSD">ETH/USD</option>
+            </select>
+          </div>
+          <div class="fr2">
+            <div class="fg">
+              <label class="fl">Direction</label>
+              <select class="fs" id="gl-direction">
+                <option value="buy">Buy (Long)</option>
+                <option value="sell">Sell (Short)</option>
+              </select>
+            </div>
+            <div class="fg">
+              <label class="fl">Lot Size</label>
+              <input type="number" class="fi" id="gl-lots" placeholder="1.0" value="1.0" step="0.01">
+            </div>
+          </div>
+          <div class="fr2">
+            <div class="fg">
+              <label class="fl">Entry Price</label>
+              <input type="number" class="fi" id="gl-entry" placeholder="1.0850" step="0.0001">
+            </div>
+            <div class="fg">
+              <label class="fl">Exit Price</label>
+              <input type="number" class="fi" id="gl-exit" placeholder="1.0870" step="0.0001">
+            </div>
+          </div>
+          <button class="btn btn-p" onclick="calculateGainLoss()" style="width:100%;margin-top:10px">Calculate P&L</button>
+          
+          <div id="gl-result" style="margin-top:20px;display:none">
+            <div class="highlight" style="text-align:center;padding:20px">
+              <div style="font-size:12px;color:var(--t2);margin-bottom:8px">Profit / Loss</div>
+              <div style="font-size:36px;font-weight:800" id="gl-pnl">$0.00</div>
+              <div style="font-size:14px;color:var(--t2);margin-top:4px" id="gl-pips">0 pips</div>
+              <div style="display:flex;justify-content:center;gap:24px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+                <div>
+                  <div style="font-size:11px;color:var(--t3)">Return %</div>
+                  <div style="font-size:18px;font-weight:700" id="gl-return">0.00%</div>
+                </div>
+                <div>
+                  <div style="font-size:11px;color:var(--t3)">R:R Ratio</div>
+                  <div style="font-size:18px;font-weight:700" id="gl-rr">0:1</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h"><span class="card-t">ℹ️ How to Use</span></div>
+        <div class="card-b" style="font-size:13px;color:var(--t1);line-height:1.7">
+          <p><strong>Plan your trades before entering.</strong> Use this calculator to know your potential profit or loss at different price levels.</p>
+          <ul style="padding-left:20px;margin-top:10px">
+            <li>Select your pair and direction (Buy or Sell)</li>
+            <li>Enter your position size in lots</li>
+            <li>Input your entry price and target exit price</li>
+            <li>See your potential P&L, pip movement, and return percentage</li>
+            <li>Use this to set realistic take-profit targets based on your risk</li>
+          </ul>
+          <div class="highlight" style="margin-top:12px;background:var(--gold-d);border-color:var(--gold)">
+            💡 <strong>Pro Tip:</strong> Always know your potential loss before entering. If the downside doesn't justify the upside, skip the trade.
+          </div>
         </div>
       </div>
     </div>
