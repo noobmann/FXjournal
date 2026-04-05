@@ -13,10 +13,10 @@ let DB={
   trades:S.get('trades',[]),
   rules:S.get('rules',[]),
   sessions:S.get('sessions',[
-    {id:'s1',name:'London',start:'08:00',end:'17:00',color:'#3b82f6'},
-    {id:'s2',name:'New York',start:'13:00',end:'22:00',color:'#22c55e'},
-    {id:'s3',name:'Tokyo',start:'00:00',end:'09:00',color:'#f59e0b'},
-    {id:'s4',name:'Sydney',start:'22:00',end:'07:00',color:'#a78bfa'},
+    {id:'s1',name:'London',start:'08:00',end:'17:00',color:'#3b82f6',localTz:'Europe/London'},
+    {id:'s2',name:'New York',start:'09:30',end:'16:00',color:'#22c55e',localTz:'America/New_York'},
+    {id:'s3',name:'Tokyo',start:'09:00',end:'17:00',color:'#f59e0b',localTz:'Asia/Tokyo'},
+    {id:'s4',name:'Sydney',start:'09:00',end:'17:00',color:'#a78bfa',localTz:'Australia/Sydney'},
   ]),
   checklist:S.get('checklist',['Structure confirmed on H4/Daily','Clear directional bias identified','Level (SBR/RBS/POI) identified','Entry criteria met','Trading session active','NOT entering on retracement','R:R minimum 1:2']),
   pairs:S.get('pairs',['XAUUSD','EURUSD','GBPUSD','USDJPY','GBPJPY','EURJPY','BTCUSD','ETHUSD','XAGUSD','AUDUSD','USDCAD']),
@@ -2643,27 +2643,30 @@ function getUserTimeMinutes(){
   return h*60+m;
 }
 
-// Check if a session (stored in GMT) is active in user's timezone
+// Check if a session (stored with local timezone) is active in user's timezone
 function inSessionUserTZ(s){
-  const tz=DB.settings.tz||'Asia/Kolkata';
+  const userTz=DB.settings.tz||'Asia/Kolkata';
+  const sessionLocalTz=s.localTz||'UTC';
   try{
     const [sh,sm]=s.start.split(':').map(Number);
     const [eh,em]=s.end.split(':').map(Number);
     const now=new Date();
     
-    // Convert session GMT times to user timezone
-    const startUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),sh,sm,0));
-    const endUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),eh,em,0));
+    // Create date objects for session start/end in the session's local timezone
+    const sessionStart=new Date(now.toLocaleString('en-US',{timeZone:sessionLocalTz}));
+    sessionStart.setHours(sh,sm,0,0);
     
-    // Get hour/minute in user timezone
-    const startOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
-    const endOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
+    const sessionEnd=new Date(now.toLocaleString('en-US',{timeZone:sessionLocalTz}));
+    sessionEnd.setHours(eh,em,0,0);
     
-    const startTimeStr=startUtc.toLocaleTimeString('en-US',startOpts);
-    const endTimeStr=endUtc.toLocaleTimeString('en-US',endOpts);
+    // Convert session times to user's timezone
+    const startInUserTz=new Date(sessionStart.toLocaleString('en-US',{timeZone:userTz}));
+    const endInUserTz=new Date(sessionEnd.toLocaleString('en-US',{timeZone:userTz}));
     
-    const [startH,startM]=startTimeStr.split(':').map(Number);
-    const [endH,endM]=endTimeStr.split(':').map(Number);
+    const startH=startInUserTz.getHours();
+    const startM=startInUserTz.getMinutes();
+    const endH=endInUserTz.getHours();
+    const endM=endInUserTz.getMinutes();
     
     const startTime=startH*60+startM;
     const endTime=endH*60+endM;
@@ -2686,16 +2689,21 @@ function getActiveSessionsInUserTZ(){
     try{
       const [sh,sm]=s.start.split(':').map(Number);
       const [eh,em]=s.end.split(':').map(Number);
+      const sessionLocalTz=s.localTz||'UTC';
       
-      // Convert session GMT times to user timezone
-      const startUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),sh,sm,0));
-      const endUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),eh,em,0));
+      // Create date objects for session start/end in the session's local timezone
+      const sessionStart=new Date(now.toLocaleString('en-US',{timeZone:sessionLocalTz}));
+      sessionStart.setHours(sh,sm,0,0);
       
+      const sessionEnd=new Date(now.toLocaleString('en-US',{timeZone:sessionLocalTz}));
+      sessionEnd.setHours(eh,em,0,0);
+      
+      // Convert to user timezone for display
       const startOpts={hour:'2-digit',minute:'2-digit',hour12:false,timeZone:tz};
       const endOpts={hour:'2-digit',minute:'2-digit',hour12:false,timeZone:tz};
       
-      s._userStart=startUtc.toLocaleTimeString('en-GB',startOpts);
-      s._userEnd=endUtc.toLocaleTimeString('en-GB',endOpts);
+      s._userStart=sessionStart.toLocaleTimeString('en-GB',startOpts);
+      s._userEnd=sessionEnd.toLocaleTimeString('en-GB',endOpts);
       
       return inSessionUserTZ(s);
     }catch{return false}
@@ -2797,16 +2805,21 @@ function renderMHSessions(){
     try{
       const [sh,sm]=s.start.split(':').map(Number);
       const [eh,em]=s.end.split(':').map(Number);
+      const sessionLocalTz=s.localTz||'UTC';
       
-      // Convert session GMT times to user timezone
-      const startUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),sh,sm,0));
-      const endUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),eh,em,0));
+      // Create date objects for session start/end in the session's local timezone
+      const sessionStart=new Date(now.toLocaleString('en-US',{timeZone:sessionLocalTz}));
+      sessionStart.setHours(sh,sm,0,0);
       
+      const sessionEnd=new Date(now.toLocaleString('en-US',{timeZone:sessionLocalTz}));
+      sessionEnd.setHours(eh,em,0,0);
+      
+      // Convert to user timezone for display
       const startOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
       const endOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
       
-      const startTimeStr=startUtc.toLocaleTimeString('en-US',startOpts);
-      const endTimeStr=endUtc.toLocaleTimeString('en-US',endOpts);
+      const startTimeStr=sessionStart.toLocaleTimeString('en-US',startOpts);
+      const endTimeStr=sessionEnd.toLocaleTimeString('en-US',endOpts);
       
       const [startH,startM]=startTimeStr.split(':').map(Number);
       const [endH,endM]=endTimeStr.split(':').map(Number);
