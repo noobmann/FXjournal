@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="amoled">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FX Journal V2 — Trading Journal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div id="toasts"></div>
+<div id="alert-bar" onclick="this.style.display='none'">⛔ RULE BREACH — Stop Trading Now. Click to dismiss.</div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="logo-a">
+    <div class="logo-m">F</div>
+    <div>
+      <div class="logo-n">FX Journal</div>
+      <div class="logo-s">Trading Journal</div>
+    </div>
+  </div>
+  <div class="acct-pill" id="acct-pill-btn">
+    <div class="acct-dot" id="sb-dot"></div>
+    <div class="acct-nm" id="sb-name">—</div>
+    <div class="acct-tp" id="sb-type">—</div>
+  </div>
+  <div class="nav-sec">
+    <div class="nav-item active" data-p="dash"><span class="nav-ic">◈</span>Dashboard</div>
+    <div class="nav-item" data-p="trades"><span class="nav-ic">⇅</span>Trades</div>
+    <div class="nav-item" data-p="journal"><span class="nav-ic">✎</span>Journal</div>
+    <div class="nav-item" data-p="notes"><span class="nav-ic">📒</span>Notes</div>
+  </div>
+  <div class="nav-sec">
+    <div class="nav-lbl">Analysis</div>
+    <div class="nav-item" data-p="analytics"><span class="nav-ic">▦</span>Performance</div>
+    <div class="nav-item" data-p="report"><span class="nav-ic">🤖</span>AI Report</div>
+  </div>
+  <div class="nav-sec">
+    <div class="nav-lbl">Manage</div>
+    <div class="nav-item" data-p="accounts"><span class="nav-ic">◉</span>Accounts</div>
+    <div class="nav-item" data-p="rules"><span class="nav-ic">⚖</span>Rules <span class="nav-badge" id="rules-badge" style="display:none">!</span></div>
+    <div class="nav-item" data-p="settings"><span class="nav-ic">⚙</span>Settings</div>
+  </div>
+  <div class="sb-foot">
+    <div class="user-row">
+      <div class="user-av" id="sb-av">K</div>
+      <div>
+        <div class="user-nm" id="sb-username">Trader</div>
+        <div class="user-rl" id="sb-userrole">Trader</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+  <header class="topbar">
+    <div class="topbar-tl" id="page-title">Dashboard</div>
+    <div class="topbar-r">
+      <div class="save-ind" id="save-ind" onclick="exportJSON(false)" title="Click to download backup">
+        <span id="save-dot" style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>
+        <span id="save-txt">Save</span>
+      </div>
+      <div class="sess-badge">
+        <div class="sess-dot" id="sess-dot"></div>
+        <span id="sess-name">—</span>
+      </div>
+      <div class="live-cw">
+        <div class="live-t" id="live-clock">—:—:—</div>
+        <div class="live-tz" id="live-tz">IST</div>
+      </div>
+      <button class="btn btn-p btn-sm" onclick="openAddTrade()">＋ Trade</button>
+    </div>
+  </header>
+
+  <!-- ═══ DASHBOARD ═══ -->
+  <div class="page active" id="page-dash">
+    <div class="stats-row" id="dash-stats">
+      <div class="stat"><div class="stat-lbl">Net P&L</div><div class="stat-v" id="d-pnl">$0.00</div><div class="stat-sub" id="d-pnl-sub">0 trades</div><div class="stat-ico">💰</div></div>
+      <div class="stat"><div class="stat-lbl">Win Rate</div><div class="stat-v acc" id="d-wr">0%</div><div class="stat-sub" id="d-wl">0W · 0L</div><div class="stat-ico">🎯</div></div>
+      <div class="stat"><div class="stat-lbl">Profit Factor</div><div class="stat-v acc" id="d-pf">—</div><div class="stat-sub">≥1.5 target</div><div class="stat-ico">📈</div></div>
+      <div class="stat"><div class="stat-lbl">Avg R:R</div><div class="stat-v gld" id="d-rr">—</div><div class="stat-sub">Actual exit-based</div><div class="stat-ico">⚖</div></div>
+    </div>
+    <div style="margin-bottom:12px">
+      <div class="card">
+        <div class="card-h">
+          <span class="card-t">Equity Curve</span>
+          <div style="display:flex;gap:5px;align-items:center">
+            <select id="eq-type" class="fs" style="font-size:10.5px;padding:3px 7px;height:auto;min-width:130px" onchange="filterEq(st.eqRange)">
+              <option value="profit">P&L Curve</option>
+              <option value="equity">Equity Curve</option>
+            </select>
+            <button class="btn btn-g btn-xs" id="eq-7d" onclick="filterEq('7d')">7D</button>
+            <button class="btn btn-g btn-xs" id="eq-30d" onclick="filterEq('30d')">30D</button>
+            <button class="btn btn-g btn-xs" id="eq-3m" onclick="filterEq('3m')">3M</button>
+            <button class="btn btn-p btn-xs" id="eq-all" onclick="filterEq('all')">All</button>
+          </div>
+        </div>
+        <div class="card-b" style="padding-bottom:10px">
+          <div style="position:relative;height:200px"><canvas id="equityChart"></canvas></div>
+          <div id="pf-dash-bar" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"></div>
+        </div>
+      </div>
+    </div>
+    <div class="g2" style="margin-bottom:12px">
+      <div class="card">
+        <div class="card-h">
+          <button class="cal-nb" onclick="calMove(-1)">‹</button>
+          <span class="card-t" id="cal-label">—</span>
+          <button class="cal-nb" onclick="calMove(1)">›</button>
+        </div>
+        <div class="card-b" style="padding:10px">
+          <div class="cal-hd" id="cal-head"></div>
+          <div class="cal-grid" id="cal-grid"></div>
+        </div>
+      </div>
+      <div class="g2" style="align-content:start">
+        <div class="card">
+          <div class="card-h"><span class="card-t">Top Sessions</span></div>
+          <div id="dash-top-sessions" style="padding:0"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="card-t">Top Pairs</span></div>
+          <div id="dash-top-pairs" style="padding:0"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="card-t">Recent Trades</span><button class="btn btn-g btn-sm" onclick="nav('trades')">All →</button></div>
+      <div class="tbl-w"><table><thead><tr><th>Date</th><th>Pair</th><th>Dir</th><th>Entry</th><th>Exit</th><th>P&L</th><th>R:R</th><th>Grade</th><th>Result</th></tr></thead><tbody id="dash-tbody"></tbody></table></div>
+    </div>
+  </div>
+
+  <!-- ═══ TRADES ═══ -->
+  <div class="page" id="page-trades">
+    <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:12px;align-items:center">
+      <select class="fs" style="width:auto;min-width:110px;font-size:12.5px" id="f-sym"><option value="">All Pairs</option></select>
+      <select class="fs" style="width:auto;min-width:110px;font-size:12.5px" id="f-sess"><option value="">All Sessions</option></select>
+      <select class="fs" style="width:auto;min-width:100px;font-size:12.5px" id="f-dir"><option value="">Direction</option><option>Buy</option><option>Sell</option></select>
+      <select class="fs" style="width:auto;min-width:100px;font-size:12.5px" id="f-res"><option value="">Result</option><option>Win</option><option>Loss</option><option>BE</option></select>
+      <input type="date" class="fi" style="width:auto;font-size:12.5px" id="f-from">
+      <input type="date" class="fi" style="width:auto;font-size:12.5px" id="f-to">
+      <button class="btn btn-g btn-sm" onclick="clearFilters()">✕ Clear</button>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button class="btn btn-s btn-sm" onclick="exportCSV()">↓ CSV</button>
+        <button class="btn btn-s btn-sm" onclick="exportJSON(false)">↓ JSON</button>
+        <button class="btn btn-p btn-sm" onclick="openAddTrade()">＋ Add Trade</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><span class="card-t">Trade History</span><span id="trades-count" style="font-size:10.5px;color:var(--t3)">0 trades</span></div>
+      <div class="tbl-w">
+        <table>
+          <thead id="trades-thead"><tr><th>Date/Time</th><th>Pair</th><th>Dir</th><th>Setup</th><th>Session</th><th>Entry</th><th>Exit</th><th>SL</th><th>Lots</th><th>Gross P&L</th><th>Net P&L</th><th>Planned R:R</th><th>Actual R:R</th><th>Hold</th><th>Grade</th><th>Actions</th></tr></thead>
+          <tbody id="trades-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ JOURNAL ═══ -->
+  <div class="page-fill" id="page-journal">
+    <div style="display:flex;flex-direction:column;border-right:1px solid var(--border);width:300px;min-width:300px;overflow:hidden">
+  <div class="jrnl-tabs">
+    <button class="jrnl-tab active" id="jt-all" onclick="setJrnlTab('all',this)">All</button>
+    <button class="jrnl-tab" id="jt-pending" onclick="setJrnlTab('pending',this)">Pending</button>
+    <button class="jrnl-tab" id="jt-done" onclick="setJrnlTab('done',this)">Journaled</button>
+  </div>
+  <div style="padding:8px 10px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;background:var(--bg2)">
+    <input type="date" class="fi" id="jrnl-from" style="flex:1;font-size:11.5px;padding:5px 8px" oninput="setJrnlDate()" placeholder="From">
+    <span style="color:var(--t2);font-size:11px">–</span>
+    <input type="date" class="fi" id="jrnl-to" style="flex:1;font-size:11.5px;padding:5px 8px" oninput="setJrnlDate()" placeholder="To">
+    <button class="btn-ic" onclick="clearJrnlDate()" title="Clear dates" style="padding:4px 7px;font-size:11px">✕</button>
+  </div>
+  <div class="journal-l" id="jrnl-list" style="border-right:none;width:auto;min-width:auto;flex:1"></div>
+</div>
+    <div class="journal-r" id="jrnl-detail">
+      <div class="empty"><div class="empty-ic">✎</div><div class="empty-tl">Select a trade to journal</div><div class="empty-sub">Write analysis, insights, what worked and what didn't.</div></div>
+    </div>
+  </div>
+
+  <!-- ═══ NOTES ═══ -->
+  <div class="page-fill" id="page-notes">
+    <div class="notes-sidebar" id="notes-folders-panel">
+      <div style="padding:10px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--t2)">Folders</div>
+        <button class="btn-ic" onclick="openFolderModal()" title="New Folder" style="padding:3px 7px;font-size:12px">＋</button>
+      </div>
+      <div id="notes-folder-list"></div>
+    </div>
+    <div class="notes-main">
+      <div style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--bg1)">
+        <div style="font-size:14px;font-weight:700;color:var(--t0);flex:1" id="notes-folder-title">All Notes</div>
+        <button class="btn btn-p btn-sm" onclick="openNoteEditor()">＋ New Note</button>
+      </div>
+      <div class="notes-list" id="notes-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══ ANALYTICS ═══ -->
+  <div class="page" id="page-analytics">
+    <!-- Filters row -->
+    <div class="perf-filters">
+      <div style="display:flex;gap:4px;flex-wrap:wrap" id="perf-time-pills">
+        <div class="time-pill active" onclick="setPerfFilter('all',this)">All Time</div>
+        <div class="time-pill" onclick="setPerfFilter('today',this)">Today</div>
+        <div class="time-pill" onclick="setPerfFilter('7d',this)">7 Days</div>
+        <div class="time-pill" onclick="setPerfFilter('30d',this)">30 Days</div>
+        <div class="time-pill" onclick="setPerfFilter('3m',this)">3 Months</div>
+        <div class="time-pill" onclick="setPerfFilter('1y',this)">1 Year</div>
+      </div>
+      <div style="display:flex;gap:5px;align-items:center;flex-wrap:wrap">
+        <input type="date" class="fi" id="perf-from" style="font-size:11.5px;padding:4px 8px;width:auto" oninput="setPerfCustomRange()" title="Custom from">
+        <span style="color:var(--t2);font-size:11px">–</span>
+        <input type="date" class="fi" id="perf-to" style="font-size:11.5px;padding:4px 8px;width:auto" oninput="setPerfCustomRange()" title="Custom to">
+        <div class="time-pill" id="pill-custom" onclick="setPerfCustomRange()" style="display:none">Custom</div>
+      </div>
+      <div style="display:flex;gap:4px;margin-left:auto">
+        <div class="time-pill active" id="pf-all" onclick="setPerfTypeFilter('all')">All</div>
+        <div class="time-pill" id="pf-wins" onclick="setPerfTypeFilter('wins')">✓ Winners</div>
+        <div class="time-pill" id="pf-losses" onclick="setPerfTypeFilter('losses')">✗ Losers</div>
+      </div>
+    </div>
+    <!-- Top stats -->
+    <div class="stats-row" id="an-top-stats">
+      <div class="stat"><div class="stat-lbl">Total P&L</div><div class="stat-v" id="an-pnl">$0</div><div class="stat-ico">💰</div></div>
+      <div class="stat"><div class="stat-lbl">Win Rate</div><div class="stat-v acc" id="an-wr">0%</div><div class="stat-ico">🎯</div></div>
+      <div class="stat"><div class="stat-lbl">Profit Factor</div><div class="stat-v acc" id="an-pf">—</div><div class="stat-ico">📊</div></div>
+      <div class="stat"><div class="stat-lbl">Expectancy</div><div class="stat-v gld" id="an-exp">$0</div><div class="stat-ico">⚖</div></div>
+    </div>
+    <!-- Extra stats row -->
+    <div class="perf-extra-stats" id="an-extra-stats">
+      <div class="stat"><div class="stat-lbl">Equity Balance</div><div class="stat-v acc" id="an-equity">$0</div></div>
+      <div class="stat"><div class="stat-lbl">Total Deposited</div><div class="stat-v" id="an-deposited">$0</div></div>
+      <div class="stat"><div class="stat-lbl">Total Withdrawn</div><div class="stat-v" id="an-withdrawn">$0</div></div>
+      <div class="stat"><div class="stat-lbl">Net Profit</div><div class="stat-v" id="an-net-profit">$0</div></div>
+      <div class="stat"><div class="stat-lbl">Consistency</div><div class="stat-v acc" id="an-consistency">—</div><div class="stat-sub">Best day / total profit</div></div>
+    </div>
+    <!-- Sub tabs -->
+    <div class="tabs" style="margin-bottom:14px" id="an-tabs">
+      <button class="tab active" onclick="anTab('ov',this)">Overview</button>
+      <button class="tab" onclick="anTab('pairs',this)">Pairs</button>
+      <button class="tab" onclick="anTab('sessions',this)">Sessions</button>
+      <button class="tab" onclick="anTab('setups',this)">Setups</button>
+      <button class="tab" onclick="anTab('time',this)">Time</button>
+      <button class="tab" onclick="anTab('emotions',this)">Emotions</button>
+      <button class="tab" onclick="anTab('calendar',this)">Calendar</button>
+    </div>
+    <!-- Overview -->
+    <div id="an-ov">
+      <div class="g2" style="margin-bottom:12px">
+        <div class="card">
+          <div class="card-h"><span class="card-t">Equity Curve</span>
+            <div style="display:flex;gap:3px">
+              <button class="btn btn-g btn-xs" onclick="renderAnEquity('profit')">P&L</button>
+              <button class="btn btn-g btn-xs" onclick="renderAnEquity('drawdown')">Drawdown</button>
+            </div>
+          </div>
+          <div class="card-b"><div style="height:180px"><canvas id="anEquityChart"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="card-t">Win / Loss</span></div>
+          <div class="card-b"><div style="height:180px"><canvas id="wlChart"></canvas></div></div>
+        </div>
+      </div>
+      <!-- Key stats table - 2 column layout -->
+      <div class="g2" style="margin-bottom:12px">
+        <div class="card">
+          <div class="card-h"><span class="card-t">Trade Statistics</span></div>
+          <div class="card-b" style="padding:0">
+            <table class="stats-table" id="an-stats-left"></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="card-t">Day Statistics</span></div>
+          <div class="card-b" style="padding:0">
+            <table class="stats-table" id="an-stats-right"></table>
+          </div>
+        </div>
+      </div>
+      <!-- Day of week (horizontal bar) -->
+      <div class="g2" style="margin-bottom:12px">
+        <div class="card">
+          <div class="card-h"><span class="card-t">P&L by Day of Week</span></div>
+          <div class="card-b"><div style="height:190px"><canvas id="dowChart"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="card-t">Grade Distribution</span></div>
+          <div class="card-b"><div style="height:190px"><canvas id="gradeChart"></canvas></div></div>
+        </div>
+      </div>
+      <!-- Long vs Short breakdown -->
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><span class="card-t">Buy vs Sell</span></div>
+          <div class="card-b" id="buysell-stats"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="card-t">Hold Time</span></div>
+          <div class="card-b" id="an-hold"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Pairs -->
+    <div id="an-pairs" style="display:none">
+      <div class="card" style="margin-bottom:12px"><div class="card-h"><span class="card-t">P&L by Pair (Horizontal)</span></div><div class="card-b"><div style="height:280px"><canvas id="pairsChart"></canvas></div></div></div>
+      <div class="card"><div class="tbl-w"><table><thead><tr><th>Pair</th><th>Trades</th><th>Win %</th><th>P&L</th><th>Lots</th><th>Avg Win</th><th>Avg Loss</th><th>Best</th><th>Worst</th></tr></thead><tbody id="pairs-tbl"></tbody></table></div></div>
+    </div>
+    <!-- Sessions -->
+    <div id="an-sessions" style="display:none">
+      <div class="g2">
+        <div class="card"><div class="card-h"><span class="card-t">P&L by Session</span></div><div class="card-b"><div style="height:230px"><canvas id="sessChart"></canvas></div></div></div>
+        <div class="card"><div class="card-h"><span class="card-t">Session Details</span></div><div class="card-b" id="sess-details"></div></div>
+      </div>
+    </div>
+    <!-- Setups -->
+    <div id="an-setups" style="display:none">
+      <div class="card" style="margin-bottom:12px"><div class="card-h"><span class="card-t">Setup Performance (Horizontal)</span></div><div class="card-b"><div style="height:300px"><canvas id="setupsChart"></canvas></div></div></div>
+    </div>
+    <!-- Time -->
+    <div id="an-time" style="display:none">
+      <div class="g2">
+        <div class="card"><div class="card-h"><span class="card-t">P&L by Hour</span></div><div class="card-b"><div style="height:240px"><canvas id="hourChart"></canvas></div></div></div>
+        <div class="card"><div class="card-h"><span class="card-t">P&L by Month</span></div><div class="card-b"><div style="height:240px"><canvas id="monthChart"></canvas></div></div></div>
+      </div>
+    </div>
+    <!-- Emotions -->
+    <div id="an-emotions" style="display:none">
+      <div class="g2" style="margin-bottom:12px">
+        <div class="card"><div class="card-h"><span class="card-t">Trade Count by Emotion</span></div><div class="card-b"><div style="height:230px"><canvas id="emoChart"></canvas></div></div></div>
+        <div class="card"><div class="card-h"><span class="card-t">P&L by Emotion</span></div><div class="card-b"><div style="height:230px"><canvas id="emoPnlChart"></canvas></div></div></div>
+      </div>
+      <div class="card"><div class="card-h"><span class="card-t">Emotion Details</span></div><div class="card-b" id="emo-tbl"></div></div>
+    </div>
+    <!-- Calendar -->
+    <div id="an-calendar" style="display:none">
+      <div class="card" style="margin-bottom:12px">
+        <div class="card-h">
+          <button class="cal-nb" onclick="anCalMove(-1)">‹</button>
+          <span class="card-t" id="an-cal-label">—</span>
+          <button class="cal-nb" onclick="anCalMove(1)">›</button>
+        </div>
+        <div class="card-b" style="padding:12px">
+          <div class="cal-hd" id="an-cal-head"></div>
+          <div class="cal-grid" id="an-cal-grid"></div>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="card">
+          <div class="card-h"><span class="card-t">Weekly Summary</span></div>
+          <div id="an-weekly-summary" style="padding:12px"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><span class="card-t">Day Detail</span></div>
+          <div id="an-day-detail">
+            <div class="empty" style="padding:30px"><div class="empty-ic">📅</div><div class="empty-tl">Click a day</div><div class="empty-sub">Click any day on the calendar to see trades</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ AI REPORT ═══ -->
+  <div class="page" id="page-report">
+    <!-- API Key Setup -->
+    <div id="ai-key-bar" class="ai-key-bar">
+      <div class="ai-key-inner">
+        <div class="ai-key-icon">🔑</div>
+        <div class="ai-key-info">
+          <div class="ai-key-title">Gemini API Key</div>
+          <div class="ai-key-sub" id="ai-key-status">Not configured</div>
+        </div>
+        <input type="password" class="fi ai-key-input" id="ai-key-input" placeholder="Paste your API key from ai.google.dev" autocomplete="off">
+        <button class="btn btn-p btn-sm" onclick="saveAIKey()">Save Key</button>
+        <button class="btn btn-s btn-sm" onclick="testAIConnection()">Test</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="ai-tabs">
+      <button class="ai-tab active" id="ai-tab-report" onclick="switchAITab('report')">📊 AI Analysis Report</button>
+      <button class="ai-tab" id="ai-tab-chat" onclick="switchAITab('chat')">💬 AI Chat Assistant</button>
+    </div>
+
+    <!-- ── REPORT TAB ── -->
+    <div id="ai-panel-report" class="ai-panel">
+      <div class="ai-report-header">
+        <div>
+          <div class="ai-report-title">AI Trading Analysis</div>
+          <div class="ai-report-sub">Powered by Gemini 3.1 Pro — analyzes every trade, pattern, and edge in your journal</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <select class="fs" id="ai-report-scope" style="width:auto;min-width:140px;font-size:12px;padding:5px 10px">
+            <option value="all">All Time</option>
+            <option value="7d">Last 7 Days</option>
+            <option value="30d">Last 30 Days</option>
+            <option value="3m">Last 3 Months</option>
+          </select>
+          <button class="btn btn-p" id="ai-gen-btn" onclick="generateAIReport()">
+            <span id="ai-gen-icon">✨</span> Generate Report
+          </button>
+        </div>
+      </div>
+      <div id="ai-report-output" class="ai-report-output">
+        <div class="ai-empty">
+          <div class="ai-empty-icon">🤖</div>
+          <div class="ai-empty-title">Ready to Analyze Your Trading</div>
+          <div class="ai-empty-sub">Click "Generate Report" to get a comprehensive AI analysis of all your journal data. The AI will freely explore your data, identify patterns, call out strengths and weaknesses, and give you personalized recommendations.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CHAT TAB ── -->
+    <div id="ai-panel-chat" class="ai-panel" style="display:none">
+      <div class="ai-chat-container">
+        <div class="ai-chat-messages" id="ai-chat-messages">
+          <div class="ai-msg ai-msg-ai">
+            <div class="ai-msg-avatar">🤖</div>
+            <div class="ai-msg-content">
+              <div class="ai-msg-text">Hey! I'm your AI trading assistant. I have access to all your journal data — trades, P&L, setups, emotions, sessions, everything.<br><br>Ask me anything about your trading performance, patterns, or for guidance. Here are some ideas:</div>
+            </div>
+          </div>
+        </div>
+        <div class="ai-suggestions" id="ai-suggestions">
+          <div class="ai-chip" onclick="sendAISuggestion(this)">What's my best performing setup?</div>
+          <div class="ai-chip" onclick="sendAISuggestion(this)">Analyze my last 10 trades</div>
+          <div class="ai-chip" onclick="sendAISuggestion(this)">Which session should I avoid?</div>
+          <div class="ai-chip" onclick="sendAISuggestion(this)">Am I overtrading?</div>
+          <div class="ai-chip" onclick="sendAISuggestion(this)">Give me a trading plan for next week</div>
+          <div class="ai-chip" onclick="sendAISuggestion(this)">What are my biggest leaks?</div>
+          <div class="ai-chip" onclick="sendAISuggestion(this)">Rate my risk management</div>
+          <div class="ai-chip" onclick="sendAISuggestion(this)">How's my discipline and psychology?</div>
+        </div>
+        <div class="ai-chat-input-bar">
+          <textarea class="ai-chat-input" id="ai-chat-input" placeholder="Ask about your trading data..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIChat()}"></textarea>
+          <button class="ai-send-btn" id="ai-send-btn" onclick="sendAIChat()">➤</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ACCOUNTS ═══ -->
+  <div class="page" id="page-accounts">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button class="btn btn-p" onclick="openAddAcct()">＋ Add Account</button>
+    </div>
+    <div class="gauto" id="accounts-grid"></div>
+  </div>
+
+  <!-- ═══ RULES ═══ -->
+  <div class="page" id="page-rules">
+    <div class="g2">
+      <div>
+        <div class="sec-t">Risk Rules</div>
+        <div id="rules-list"></div>
+        <button class="btn btn-s btn-sm" style="margin-top:6px" onclick="O('modal-rule-add')">＋ Add Rule</button>
+        <div class="sec-t" style="margin-top:20px">Pre-Trade Checklist</div>
+        <div id="global-chklist"></div>
+        <button class="btn btn-s btn-sm" style="margin-top:6px" onclick="addCLItem()">＋ Add Item</button>
+        <div class="sec-t" style="margin-top:20px">Custom Setups</div>
+        <div id="custom-setups-list" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px"></div>
+        <div style="display:flex;gap:7px;align-items:center">
+          <input class="fi" id="new-setup-inp" placeholder="Setup name (e.g. CHOCH, ISS)" style="flex:1" onkeydown="if(event.key==='Enter')addSetup()">
+          <button class="btn btn-s btn-sm" onclick="addSetup()">＋ Add</button>
+        </div>
+        <div class="sec-t" style="margin-top:20px">Sessions</div>
+        <div id="sessions-config-list"></div>
+        <button class="btn btn-s btn-sm" style="margin-top:6px" onclick="O('modal-session-add')">＋ Add Session</button>
+      </div>
+      <div>
+        <div class="sec-t">Allowed Instruments</div>
+        <div class="tag-w" id="pairs-wrap"><input class="tag-inp" id="pairs-inp" placeholder="Type pair + Enter" onkeydown="addPair(event)"></div>
+        <div style="font-size:11px;color:var(--t3);margin-top:5px">Pairs not listed will trigger a warning.</div>
+        <div class="sec-t" style="margin-top:20px">Today's Status</div>
+        <div id="today-status"></div>
+        <div class="sec-t" style="margin-top:20px">Violation Log</div>
+        <div id="viol-log" style="font-size:12px;color:var(--t2)">No violations.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SETTINGS ═══ -->
+  <div class="page" id="page-settings">
+    <div class="g2">
+      <div>
+        <div class="sec-t">Theme</div>
+        <div class="theme-grid" style="grid-template-columns:1fr 1fr;max-width:280px">
+          <div onclick="setTheme('amoled')"><div class="theme-sw" style="background:linear-gradient(135deg,#000 50%,#1e64ff)" data-t="amoled"></div><div class="theme-nm">AMOLED Dark</div></div>
+          <div onclick="setTheme('arctic')"><div class="theme-sw" style="background:linear-gradient(135deg,#f0f4f9 50%,#2563eb)" data-t="arctic"></div><div class="theme-nm">Arctic Light</div></div>
+        </div>
+        <div class="sec-t" style="margin-top:20px">Profile</div>
+        <div class="card card-b">
+          <div class="fg"><label class="fl">Trader Name</label><input class="fi" id="set-name" oninput="saveSettings()"></div>
+          <div class="fg"><label class="fl">Strategy / Style</label><input class="fi" id="set-strat" oninput="saveSettings()"></div>
+          <div class="fr2">
+            <div class="fg"><label class="fl">Timezone</label>
+              <select class="fs" id="set-tz" onchange="saveSettings()">
+                <option value="Asia/Kolkata">IST (UTC+5:30)</option>
+                <option value="UTC">UTC</option>
+                <option value="America/New_York">EST (UTC-5)</option>
+                <option value="Europe/London">GMT</option>
+                <option value="Asia/Dubai">GST (UTC+4)</option>
+                <option value="Asia/Singapore">SGT (UTC+8)</option>
+                <option value="Australia/Sydney">AEST (UTC+10)</option>
+              </select>
+            </div>
+            <div class="fg"><label class="fl">Currency</label>
+              <select class="fs" id="set-cur" onchange="saveSettings()"><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option></select>
+            </div>
+          </div>
+          <div class="fg" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs)">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--t0)">Count BE / RF as Wins</div>
+              <div style="font-size:11.5px;color:var(--t2);margin-top:2px">Breakeven trades count toward win rate</div>
+            </div>
+            <div class="tog" id="tog-be-win" onclick="toggleBEasWin()"></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="sec-t">Data</div>
+        <div class="card card-b" style="display:flex;flex-direction:column;gap:8px">
+          <div class="highlight">💾 All data saves to browser storage automatically. Download a JSON backup regularly to avoid losing data.</div>
+          <button class="btn btn-p" onclick="exportJSON(false)">💾 Download Backup (JSON)</button>
+          <button class="btn btn-s" onclick="document.getElementById('import-file').click()">📂 Load from JSON</button>
+          <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+          <button class="btn btn-s" onclick="exportCSV()">↓ Export CSV</button>
+          <div class="div"></div>
+          <button class="btn btn-d" onclick="clearAll()">⚠ Clear All Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODALS ═══ -->
+
+<!-- ADD TRADE (modern) -->
+<div class="overlay" id="modal-trade">
+  <div class="modal modal-xl">
+    <div class="modal-hd">
+      <div class="modal-tl" id="trade-modal-title">Add Trade</div>
+      <button class="modal-x" onclick="C('modal-trade')">✕</button>
+    </div>
+    <div class="modal-bd">
+      <!-- PRE-TRADE CHECKLIST (collapsible) -->
+      <div id="modal-chk-outer">
+        <div class="chk-toggle-header" onclick="toggleChecklist()">
+          <div class="chk-toggle-arrow" id="chk-arrow">▶</div>
+          <div class="chk-toggle-title">Pre-Trade Checklist</div>
+          <div class="chk-toggle-badge" id="chk-badge">0 items</div>
+        </div>
+        <div class="chk-collapse" id="chk-collapse">
+          <div id="modal-chk-list" style="margin-bottom:14px"></div>
+        </div>
+      </div>
+
+      <!-- BUY / SELL - Modern large buttons -->
+      <div class="buysell-wrap">
+        <div class="bs-btn buy" id="bs-buy" onclick="setBuySell('Buy')">
+          BUY
+          <span class="bs-lbl">Long · Bullish</span>
+        </div>
+        <div class="bs-btn sell" id="bs-sell" onclick="setBuySell('Sell')">
+          SELL
+          <span class="bs-lbl">Short · Bearish</span>
+        </div>
+      </div>
+
+      <!-- Row 1: Date/Times, Pair, Session -->
+      <div class="fr4">
+        <div class="fg"><label class="fl">Open Date</label><input type="date" class="fi" id="t-date"></div>
+        <div class="fg"><label class="fl">Open Time</label><input type="time" class="fi" id="t-open-time"></div>
+        <div class="fg"><label class="fl">Close Date</label><input type="date" class="fi" id="t-close-date"></div>
+        <div class="fg"><label class="fl">Close Time</label><input type="time" class="fi" id="t-close-time"></div>
+      </div>
+      <div class="fr3">
+        <div class="fg"><label class="fl">Instrument / Pair</label><select class="fs" id="t-symbol"></select></div>
+        <div class="fg">
+  <label class="fl">Session <span style="color:var(--accent2);font-size:9px">(auto-detected)</span></label>
+  <div class="sess-chip-grp" id="t-session-chips"></div>
+  <input type="hidden" id="t-session" value="">
+</div>
+        <div class="fg">
+  <label class="fl">Timeframe</label>
+  <div class="tf-chip-grp" id="t-tf-chips">
+    <div class="tf-chip" onclick="selTF('M1')">M1</div>
+    <div class="tf-chip" onclick="selTF('M5')">M5</div>
+    <div class="tf-chip" onclick="selTF('M15')">M15</div>
+    <div class="tf-chip" onclick="selTF('M30')">M30</div>
+    <div class="tf-chip" onclick="selTF('H1')">H1</div>
+    <div class="tf-chip sel" onclick="selTF('H4')">H4</div>
+    <div class="tf-chip" onclick="selTF('Daily')">Daily</div>
+    <div class="tf-chip" onclick="selTF('Weekly')">Weekly</div>
+  </div>
+  <input type="hidden" id="t-tf" value="H4">
+</div>
+      </div>
+
+      <!-- Structure (auto-set from Buy/Sell) -->
+      <div class="fr3">
+        <div class="fg">
+          <label class="fl">Setup</label>
+          <select class="fs" id="t-setup"></select>
+        </div>
+        <div class="fg">
+          <label class="fl">Structure <span style="color:var(--t3)">(auto)</span></label>
+          <div style="display:flex;gap:6px;margin-top:2px" id="struct-chips">
+            <div class="chip sel-g sel" id="sc-bullish" onclick="selStruct('Bullish')">↑ Bullish</div>
+            <div class="chip" id="sc-bearish" onclick="selStruct('Bearish')">↓ Bearish</div>
+            <div class="chip" id="sc-ranging" onclick="selStruct('Ranging')">↔ Ranging</div>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl">Instrument Type</label>
+          <select class="fs" id="t-inst" onchange="calcAll()">
+            <option value="forex">Forex (100k lot)</option>
+            <option value="gold">Gold / XAU (100 oz)</option>
+            <option value="crypto">Crypto (1 coin)</option>
+            <option value="indices">Indices</option>
+            <option value="manual">Manual P&L</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- PRICE LEVELS -->
+      <div class="price-panel">
+        <div class="price-panel-title">Price Levels — P&L & R:R auto-calculated from actual exit</div>
+        <div class="fr4">
+          <div class="fg" style="margin-bottom:0"><label class="fl">Entry</label><input type="number" class="fi mono-i" id="t-entry" step="0.00001" oninput="calcAll()" placeholder="Entry price"></div>
+          <div class="fg" style="margin-bottom:0"><label class="fl">Stop Loss</label><input type="number" class="fi mono-i" id="t-sl" step="0.00001" oninput="calcAll()" placeholder="SL price" style="color:var(--red2)"></div>
+          <div class="fg" style="margin-bottom:0"><label class="fl">Take Profit</label><input type="number" class="fi mono-i" id="t-tp" step="0.00001" oninput="calcAll()" placeholder="TP price" style="color:var(--green2)"></div>
+          <div class="fg" style="margin-bottom:0"><label class="fl" style="color:var(--accent2)">★ Actual Exit</label><input type="number" class="fi mono-i" id="t-exit" step="0.00001" oninput="calcAll()" onchange="calcAll()" placeholder="Actual close" style="border-color:var(--accent);color:var(--gold2);font-weight:600"></div>
+        </div>
+        <div class="fr4" style="margin-top:10px">
+          <div class="fg" style="margin-bottom:0"><label class="fl">Lot Size</label><input type="number" class="fi mono-i" id="t-lots" step="0.01" oninput="calcAll()" onchange="calcAll()" placeholder="0.10"></div>
+          <div class="fg" style="margin-bottom:0"><label class="fl">Commission $</label><input type="number" class="fi mono-i" id="t-comm" step="0.01" placeholder="0.00" oninput="calcAll()" onchange="calcAll()"></div>
+          <div class="fg" style="margin-bottom:0"><label class="fl" style="color:var(--accent2)">Override P&L</label><input type="number" class="fi mono-i" id="t-pnl" step="0.01" placeholder="Leave blank = auto"></div>
+          <div></div>
+        </div>
+        <!-- R:R display -->
+        <div class="rr-display" style="margin-top:10px">
+          <div class="rr-item"><div class="rr-lbl">Planned R:R</div><div class="rr-val" id="t-rr-plan">—</div></div>
+          <div class="rr-item"><div class="rr-lbl">Actual R:R</div><div class="rr-val" id="t-rr-actual" style="color:var(--accent2)">—</div></div>
+          <div class="rr-item"><div class="rr-lbl">Calc P&L</div><div class="rr-val" id="t-pnl-calc" style="color:var(--green2)">—</div></div>
+          <div class="rr-item"><div class="rr-lbl">Net P&L (after comm)</div><div class="rr-val" id="t-pnl-net">—</div></div>
+        </div>
+        <!-- TradingView screenshot link -->
+        <div class="fg" style="margin-top:10px;margin-bottom:0">
+          <label class="fl">TradingView Chart Link <span style="color:var(--t3);font-weight:400">(optional)</span></label>
+          <input class="fi" id="t-tv-link" placeholder="https://www.tradingview.com/chart/..." style="font-size:12px">
+        </div>
+      </div>
+
+      <!-- GRADE + EMOTION -->
+      <div class="fr2">
+        <div class="fg">
+          <label class="fl">Trade Grade</label>
+          <div class="grade-g">
+            <div class="grade-c" data-g="A+" onclick="selGrade('A+')">A+</div>
+            <div class="grade-c" data-g="A" onclick="selGrade('A')">A</div>
+            <div class="grade-c" data-g="B" onclick="selGrade('B')">B</div>
+            <div class="grade-c" data-g="C" onclick="selGrade('C')">C</div>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl">Emotion <span style="font-size:9.5px;color:var(--t3);font-weight:400">(multi-select)</span></label>
+          <div class="chip-grp" id="emo-chips">
+            <div class="chip" onclick="toggleEmo(this)" data-emo="Calm">😌 Calm</div>
+            <div class="chip" onclick="toggleEmo(this)" data-emo="Patient">🎯 Patient</div>
+            <div class="chip" onclick="toggleEmo(this)" data-emo="FOMO">😨 FOMO</div>
+            <div class="chip" onclick="toggleEmo(this)" data-emo="Revenge">😤 Revenge</div>
+            <div class="chip" onclick="toggleEmo(this)" data-emo="Confident">💪 Confident</div>
+            <div class="chip" onclick="toggleEmo(this)" data-emo="Anxious">😰 Anxious</div>
+            <div class="chip" onclick="toggleEmo(this)" data-emo="Neutral">😐 Neutral</div>
+            <div class="chip" onclick="toggleEmo(this)" data-emo="Excited">🔥 Excited</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RULES FOLLOWED -->
+      <div class="fg">
+        <label class="fl">Rules Followed?</label>
+        <div class="fr2">
+          <button class="btn btn-s" id="rules-yes" onclick="setFR(true)">✅ Yes — Followed All Rules</button>
+          <button class="btn btn-s" id="rules-no" onclick="setFR(false)">❌ No — Violated Rules</button>
+        </div>
+      </div>
+
+      <!-- TRADE RESULT OVERRIDE -->
+      <div class="fg">
+        <label class="fl">Risk Free / Breakeven? <span style="font-size:9.5px;color:var(--t2);font-weight:400">(optional)</span></label>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="chip" id="tr-rf" data-r="rf" onclick="setTradeResult('rf')" style="font-size:13px;padding:7px 18px">🔄 RF / BE Trade</div>
+          <span style="font-size:11.5px;color:var(--t2)">Mark if this trade closed at breakeven or was made risk-free. Win rate impact set in Settings.</span>
+        </div>
+      </div>
+
+      <!-- TAGS + NOTES -->
+      <div class="fg"><label class="fl">Tags</label><div class="tag-w" id="trade-tags-wrap"><input class="tag-inp" id="trade-tags-in" placeholder="tag + Enter" onkeydown="addTag(event)"></div></div>
+      <div class="fg"><label class="fl">Notes / Analysis</label><textarea class="ft" id="t-notes" rows="3" placeholder="Entry reasoning, confluences, what you observed..."></textarea></div>
+
+      <!-- SCREENSHOTS -->
+      <div class="fg">
+        <label class="fl">Screenshots</label>
+        <div class="upload-z" onclick="document.getElementById('ss-inp').click()" ondragover="event.preventDefault();this.classList.add('over')" ondragleave="this.classList.remove('over')" ondrop="dropSS(event)">
+          <div style="font-size:20px;margin-bottom:5px">📸</div>
+          <div style="font-size:12px;color:var(--t2)">Click or drag & drop chart screenshots</div>
+        </div>
+        <input type="file" id="ss-inp" multiple accept="image/*" style="display:none" onchange="addSS(event)">
+        <div class="ss-grid" id="ss-preview"></div>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn btn-g" onclick="C('modal-trade')">Cancel</button>
+      <button class="btn btn-p" onclick="saveTrade()">💾 Save Trade</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD ACCOUNT -->
+<div class="overlay" id="modal-acct-add">
+  <div class="modal">
+    <div class="modal-hd"><div class="modal-tl" id="acct-modal-title">Add Account</div><button class="modal-x" onclick="C('modal-acct-add')">✕</button></div>
+    <div class="modal-bd">
+      <div class="fg"><label class="fl">Account Name</label><input class="fi" id="a-name" placeholder="FTMO Challenge"></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Type</label><select class="fs" id="a-type" onchange="showPFFields()"><option>Live</option><option>Prop Firm</option></select></div>
+        <div class="fg"><label class="fl">Currency</label><select class="fs" id="a-currency"><option>USD</option><option>EUR</option><option>GBP</option><option>INR</option></select></div>
+      </div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Starting Balance <span style="font-weight:400;color:var(--t3)">(set 0 if tracking via deposits)</span></label><input type="number" class="fi" id="a-balance" placeholder="0"></div>
+        <div class="fg"><label class="fl">Broker</label><input class="fi" id="a-broker" placeholder="IC Markets"></div>
+      </div>
+      <!-- Fresh start -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);padding:11px;margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--accent2);margin-bottom:7px">⚡ Current Balance Override (Fresh Start)</div>
+        <div style="font-size:11px;color:var(--t3);margin-bottom:8px">Set this to track P&L from a specific date forward — useful if you have prior history you don't want included.</div>
+        <div class="fr2">
+          <div class="fg" style="margin-bottom:0"><label class="fl">Current Balance ($)</label><input type="number" class="fi" id="a-cur-bal" placeholder="Leave blank = auto"></div>
+          <div class="fg" style="margin-bottom:0"><label class="fl">Track From Date</label><input type="date" class="fi" id="a-fresh-date"></div>
+        </div>
+      </div>
+      <!-- Deposits/Withdrawals (Live/Demo accounts) -->
+      <div id="depw-section" style="display:none">
+        <div class="sec-t" style="margin-top:0">Deposits & Withdrawals</div>
+        <div id="depw-list" style="margin-bottom:8px;max-height:150px;overflow-y:auto"></div>
+        <div class="fr3">
+          <div class="fg" style="margin-bottom:0"><label class="fl">Amount ($)</label><input type="number" class="fi" id="depw-amount" step="0.01" placeholder="Amount"></div>
+          <div class="fg" style="margin-bottom:0"><label class="fl">Type</label><select class="fs" id="depw-type"><option value="deposit">Deposit</option><option value="withdrawal">Withdrawal</option></select></div>
+          <div class="fg" style="margin-bottom:0"><label class="fl">Date</label><input type="date" class="fi" id="depw-date"></div>
+        </div>
+        <button class="btn btn-s btn-sm" style="margin-top:8px" onclick="addDepW()">＋ Add</button>
+      </div>
+      <!-- Prop firm rules -->
+      <div id="pf-fields" style="display:none">
+        <div class="sec-t" style="margin-top:12px">Prop Firm Rules</div>
+        <div class="fr2">
+          <div class="fg"><label class="fl">Daily DD Limit (%)</label><input type="number" class="fi" id="a-daily-dd" placeholder="5" step="0.1"></div>
+          <div class="fg"><label class="fl">Max DD Limit (%)</label><input type="number" class="fi" id="a-max-dd" placeholder="10" step="0.1"></div>
+        </div>
+        <div class="fr2">
+          <div class="fg"><label class="fl">Profit Target (%)</label><input type="number" class="fi" id="a-profit-target" placeholder="10" step="0.1"></div>
+          <div class="fg"><label class="fl">Min Trading Days</label><input type="number" class="fi" id="a-min-days" placeholder="5"></div>
+        </div>
+        <div class="fg"><label class="fl">Prop Firm Timezone (DD reset)</label>
+          <select class="fs" id="a-pf-tz"><option value="UTC">UTC</option><option value="America/New_York">New York (EST)</option><option value="Europe/London">London (GMT)</option><option value="Asia/Kolkata">IST</option></select>
+        </div>
+        <div class="warn-box">⚠ Daily DD resets at midnight in the selected timezone above.</div>
+      </div>
+      <div class="fg" style="margin-top:12px"><label class="fl">Color</label>
+        <div style="display:flex;gap:7px;flex-wrap:wrap">
+          <div class="cdot sel" style="background:#3b82f6" onclick="selAcctColor('#3b82f6',this)"></div>
+          <div class="cdot" style="background:#22c55e" onclick="selAcctColor('#22c55e',this)"></div>
+          <div class="cdot" style="background:#f59e0b" onclick="selAcctColor('#f59e0b',this)"></div>
+          <div class="cdot" style="background:#ef4444" onclick="selAcctColor('#ef4444',this)"></div>
+          <div class="cdot" style="background:#a78bfa" onclick="selAcctColor('#a78bfa',this)"></div>
+          <div class="cdot" style="background:#fb923c" onclick="selAcctColor('#fb923c',this)"></div>
+          <div class="cdot" style="background:#06b6d4" onclick="selAcctColor('#06b6d4',this)"></div>
+        </div>
+        <input type="hidden" id="a-color" value="#3b82f6">
+      </div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-g" onclick="C('modal-acct-add')">Cancel</button><button class="btn btn-p" onclick="saveAcct()">Save Account</button></div>
+  </div>
+</div>
+
+<!-- ACCOUNT SWITCHER -->
+<div class="overlay" id="modal-acct-switch">
+  <div class="modal modal-sm"><div class="modal-hd"><div class="modal-tl">Switch Account</div><button class="modal-x" onclick="C('modal-acct-switch')">✕</button></div><div class="modal-bd" id="acct-switch-body"></div></div>
+</div>
+
+<!-- SAVE PROMPT -->
+<div class="overlay" id="modal-save">
+  <div class="modal modal-sm" style="max-width:360px">
+    <div class="modal-hd"><div class="modal-tl">Save Journal</div><button class="modal-x" onclick="C('modal-save')">✕</button></div>
+    <div class="modal-bd">
+      <div class="warn-box" style="margin-bottom:14px">Browsers download a new file each save. Replace your old journal file manually after downloading.</div>
+      <div style="display:flex;gap:8px;flex-direction:column">
+        <button class="btn btn-p" onclick="exportJSON(false);C('modal-save')">💾 Save (FXJournal.json)</button>
+        <button class="btn btn-s" onclick="exportJSON(true);C('modal-save')">💾 Save with Date</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD RULE -->
+<div class="overlay" id="modal-rule-add">
+  <div class="modal modal-sm">
+    <div class="modal-hd"><div class="modal-tl">Add Rule</div><button class="modal-x" onclick="C('modal-rule-add')">✕</button></div>
+    <div class="modal-bd">
+      <div class="fg"><label class="fl">Rule Type</label>
+        <select class="fs" id="rule-type" onchange="showRuleFields()">
+          <option value="daily_loss">Max Daily Loss ($)</option>
+          <option value="daily_loss_pct">Max Daily Loss (%)</option>
+          <option value="max_trades">Max Trades Per Day</option>
+          <option value="min_rr">Min R:R Ratio</option>
+          <option value="max_lot">Max Lot Size</option>
+          <option value="custom">Custom Rule (text)</option>
+        </select>
+      </div>
+      <div class="fg" id="rule-val-g"><label class="fl">Value</label><input type="number" class="fi" id="rule-val" placeholder="0"></div>
+      <div class="fg" id="rule-txt-g" style="display:none"><label class="fl">Rule Text</label><input class="fi" id="rule-text" placeholder="e.g. Only take A+ setups"></div>
+      <div class="fg"><label class="fl">Account (blank = global)</label><select class="fs" id="rule-acct"><option value="">Global</option></select></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-g" onclick="C('modal-rule-add')">Cancel</button><button class="btn btn-p" onclick="saveRule()">Add Rule</button></div>
+  </div>
+</div>
+
+<!-- ADD SESSION -->
+<div class="overlay" id="modal-session-add">
+  <div class="modal modal-sm">
+    <div class="modal-hd"><div class="modal-tl" id="sess-modal-title">Add Session</div><button class="modal-x" onclick="C('modal-session-add')">✕</button></div>
+    <div class="modal-bd">
+      <div class="fg"><label class="fl">Session Name</label><input class="fi" id="sess-name-inp" placeholder="London"></div>
+      <div class="fr2">
+        <div class="fg"><label class="fl">Start (GMT)</label><input type="time" class="fi" id="sess-start"></div>
+        <div class="fg"><label class="fl">End (GMT)</label><input type="time" class="fi" id="sess-end"></div>
+      </div>
+      <div class="fg"><label class="fl">Color</label><input type="color" class="fi" id="sess-color" value="#3b82f6" style="height:38px;padding:2px 6px;cursor:pointer"></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-g" onclick="C('modal-session-add')">Cancel</button><button class="btn btn-p" onclick="saveSession()">Save</button></div>
+  </div>
+</div>
+
+<!-- VIEW TRADE -->
+<div class="overlay" id="modal-view-trade">
+  <div class="modal modal-xl"><div class="modal-hd"><div class="modal-tl" id="vt-title">Trade</div><button class="modal-x" onclick="C('modal-view-trade')">✕</button></div><div class="modal-bd" id="vt-body"></div></div>
+</div>
+
+<!-- CONFIRM -->
+<div class="overlay" id="modal-confirm" style="z-index:9999">
+  <div class="modal modal-sm">
+    <div class="modal-hd"><div class="modal-tl" id="confirm-title">Confirm</div></div>
+    <div class="modal-bd" id="confirm-msg" style="font-size:13.5px;color:var(--t1);margin-bottom:12px"></div>
+    <div class="modal-ft"><button class="btn btn-s" onclick="C('modal-confirm')">Cancel</button><button class="btn btn-d" id="confirm-btn">Confirm</button></div>
+  </div>
+</div>
+
+<!-- NOTE EDITOR MODAL -->
+<div class="overlay" id="modal-note-editor">
+  <div class="modal modal-xl" style="max-width:98vw;width:98vw;height:95vh;display:flex;flex-direction:column;margin:auto;border-radius:12px">
+    <div class="modal-hd" style="flex-shrink:0">
+      <div style="display:flex;align-items:center;gap:10px;flex:1">
+        <div class="modal-tl" id="note-editor-title">New Note</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <button class="btn btn-d btn-sm" id="note-delete-btn" style="display:none" onclick="deleteNote()">✕ Delete</button>
+        <button class="btn btn-p btn-sm" onclick="saveNote()">💾 Save</button>
+        <button class="modal-x" onclick="C('modal-note-editor')">✕</button>
+      </div>
+    </div>
+    <!-- Note toolbar -->
+    <div class="note-toolbar" id="note-toolbar">
+      <input class="note-title-input" id="note-title" placeholder="Note title..." autocomplete="off">
+      <div class="note-toolbar-row">
+        <select class="fs note-toolbar-sel" id="note-folder-sel"></select>
+        <select class="fs note-toolbar-sel" id="note-trade-link"><option value="">🔗 Link Trade</option></select>
+        <div style="margin-left:auto;display:flex;gap:4px;align-items:center">
+          <button class="btn btn-s btn-sm" onclick="insertNoteImage()" title="Add Image">📸 Image</button>
+          <input type="file" id="note-img-inp" multiple accept="image/*" style="display:none" onchange="handleNoteImgInsert(event)">
+          <div style="width:1px;height:20px;background:var(--border);margin:0 4px"></div>
+          <button class="btn btn-s btn-sm note-draw-toggle" id="note-draw-btn" onclick="toggleDrawMode()" title="Toggle Drawing Mode">✏️ Draw</button>
+          <button class="btn btn-s btn-sm" id="note-eraser-btn" onclick="toggleEraser()" title="Eraser">🧹 Eraser</button>
+          <input type="color" id="draw-color" value="#ff4444" style="width:28px;height:24px;border:1px solid var(--border);border-radius:4px;cursor:pointer;background:var(--bg2)" onchange="setDrawColor(this.value)">
+          <select class="fs" id="draw-size" style="width:62px;font-size:10px;padding:2px 4px;height:24px" onchange="setDrawSize(this.value)">
+            <option value="2">Thin</option>
+            <option value="3" selected>Med</option>
+            <option value="6">Thick</option>
+            <option value="12">Bold</option>
+          </select>
+          <button class="btn btn-g btn-sm" onclick="undoDrawing()" title="Undo drawing">↩</button>
+          <button class="btn btn-g btn-sm" onclick="clearDrawing()" title="Clear all drawing">✕</button>
+        </div>
+      </div>
+    </div>
+    <!-- Linked trade details (shown dynamically) -->
+    <div id="note-trade-details" style="display:none;flex-shrink:0"></div>
+    <!-- Note body -->
+    <div class="note-editor-body" id="note-editor-body">
+      <div class="note-canvas-wrap" id="note-canvas-wrap">
+        <div class="note-content-editable" id="note-content" contenteditable="true" data-placeholder="Start writing your notes here... Paste or drop images inline. Toggle ✏️ Draw to sketch anywhere."></div>
+        <canvas class="note-draw-canvas" id="draw-canvas"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FOLDER MODAL -->
+<div class="overlay" id="modal-folder">
+  <div class="modal modal-sm">
+    <div class="modal-hd"><div class="modal-tl" id="folder-modal-title">New Folder</div><button class="modal-x" onclick="C('modal-folder')">✕</button></div>
+    <div class="modal-bd">
+      <div class="fg"><label class="fl">Folder Name</label><input class="fi" id="folder-name" placeholder="e.g. Price Action, ICT Concepts..."></div>
+    </div>
+    <div class="modal-ft"><button class="btn btn-g" onclick="C('modal-folder')">Cancel</button><button class="btn btn-p" onclick="saveFolder()">Save</button></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
