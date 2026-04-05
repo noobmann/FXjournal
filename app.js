@@ -12,12 +12,7 @@ let DB={
   accounts:S.get('accounts',[]),
   trades:S.get('trades',[]),
   rules:S.get('rules',[]),
-  sessions:S.get('sessions',[
-    {id:'s1',name:'London',start:'08:00',end:'17:00',color:'#3b82f6',localTz:'Europe/London'},
-    {id:'s2',name:'New York',start:'09:30',end:'16:00',color:'#22c55e',localTz:'America/New_York'},
-    {id:'s3',name:'Tokyo',start:'09:00',end:'17:00',color:'#f59e0b',localTz:'Asia/Tokyo'},
-    {id:'s4',name:'Sydney',start:'09:00',end:'17:00',color:'#a78bfa',localTz:'Australia/Sydney'},
-  ]),
+  sessions:S.get('sessions',[]),
   checklist:S.get('checklist',['Structure confirmed on H4/Daily','Clear directional bias identified','Level (SBR/RBS/POI) identified','Entry criteria met','Trading session active','NOT entering on retracement','R:R minimum 1:2']),
   pairs:S.get('pairs',['XAUUSD','EURUSD','GBPUSD','USDJPY','GBPJPY','EURJPY','BTCUSD','ETHUSD','XAGUSD','AUDUSD','USDCAD']),
   setups:S.get('setups',DEFAULT_SETUPS),
@@ -26,6 +21,28 @@ let DB={
   notes:S.get('notes',[]),
   noteFolders:S.get('noteFolders',[{id:'f_general',name:'General'}]),
 };
+
+// ═══════════════════════════════════════════════════════════
+// REAL MARKET SESSIONS (FIXED - Independent of user settings)
+// These are the ACTUAL market hours in their local timezones
+// DO NOT modify these - they represent real global market hours
+// ═══════════════════════════════════════════════════════════
+const REAL_MARKET_SESSIONS = [
+  {id:'m1',name:'Sydney',start:'09:00',end:'17:00',color:'#a78bfa',localTz:'Australia/Sydney'},
+  {id:'m2',name:'Tokyo',start:'09:00',end:'17:00',color:'#f59e0b',localTz:'Asia/Tokyo'},
+  {id:'m3',name:'London',start:'08:00',end:'17:00',color:'#3b82f6',localTz:'Europe/London'},
+  {id:'m4',name:'New York',start:'09:30',end:'16:00',color:'#22c55e',localTz:'America/New_York'},
+];
+
+// Initialize default sessions if empty (for Rules section)
+if(DB.sessions.length===0){
+  DB.sessions=[
+    {id:'s1',name:'London',start:'08:00',end:'17:00',color:'#3b82f6',localTz:'Europe/London'},
+    {id:'s2',name:'New York',start:'09:30',end:'16:00',color:'#22c55e',localTz:'America/New_York'},
+    {id:'s3',name:'Tokyo',start:'09:00',end:'17:00',color:'#f59e0b',localTz:'Asia/Tokyo'},
+    {id:'s4',name:'Sydney',start:'09:00',end:'17:00',color:'#a78bfa',localTz:'Australia/Sydney'},
+  ];
+}
 
 let st={
   activeAcctId:S.get('activeAcct',null),
@@ -2685,7 +2702,8 @@ function getActiveSessionsInUserTZ(){
   const tzLabelStr=tzLabel();
   const now=new Date();
   
-  return DB.sessions.filter(s=>{
+  // Use REAL_MARKET_SESSIONS for Market Hours (independent of user's rule sessions)
+  return REAL_MARKET_SESSIONS.filter(s=>{
     try{
       const [sh,sm]=s.start.split(':').map(Number);
       const [eh,em]=s.end.split(':').map(Number);
@@ -2801,7 +2819,8 @@ function renderMHSessions(){
   const now=new Date();
   const currentTime=getUserTimeMinutes();
   
-  const sessions=DB.sessions.map(s=>{
+  // Use REAL_MARKET_SESSIONS for Market Hours (independent of user's rule sessions)
+  const sessions=REAL_MARKET_SESSIONS.map(s=>{
     try{
       const [sh,sm]=s.start.split(':').map(Number);
       const [eh,em]=s.end.split(':').map(Number);
@@ -2817,9 +2836,7 @@ function renderMHSessions(){
       // Convert to user timezone for display
       const startOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
       const endOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
-      
       const startTimeStr=sessionStart.toLocaleTimeString('en-US',startOpts);
-      const endTimeStr=sessionEnd.toLocaleTimeString('en-US',endOpts);
       
       const [startH,startM]=startTimeStr.split(':').map(Number);
       const [endH,endM]=endTimeStr.split(':').map(Number);
@@ -2956,22 +2973,31 @@ function renderMHOverlaps(){
     <div class="mh-overlap-grid">
       ${SESSION_OVERLAPS.map(overlap=>{
         const sessionData=overlap.sessions.map(sessName=>{
-          const s=DB.sessions.find(x=>x.name===sessName);
+          // Use REAL_MARKET_SESSIONS instead of DB.sessions
+          const s=REAL_MARKET_SESSIONS.find(x=>x.name===sessName);
           if(!s)return null;
           
           try{
             const [sh,sm]=s.start.split(':').map(Number);
             const [eh,em]=s.end.split(':').map(Number);
             
-            // Convert session GMT times to user timezone
-            const startUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),sh,sm,0));
-            const endUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),eh,em,0));
+            // Use session local timezone for accurate conversion
+            const sessionLocalTz=s.localTz||'UTC';
+
+            // Create date objects for session start/end in the session's local timezone
+            const sessionStart=new Date(now.toLocaleString('en-US',{timeZone:sessionLocalTz}));
+            sessionStart.setHours(sh,sm,0,0);
+
+            const sessionEnd=new Date(now.toLocaleString('en-US',{timeZone:sessionLocalTz}));
+            sessionEnd.setHours(eh,em,0,0);
+            // Convert to user timezone for display
+            const startOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
+            const startTimeStr=sessionStart.toLocaleTimeString('en-US',startOpts);
+            const endTimeStr=sessionEnd.toLocaleTimeString('en-US',endOpts);
             
             const startOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
             const endOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
-            
             const startTimeStr=startUtc.toLocaleTimeString('en-US',startOpts);
-            const endTimeStr=endUtc.toLocaleTimeString('en-US',endOpts);
             
             const [startH,startM]=startTimeStr.split(':').map(Number);
             const [endH,endM]=endTimeStr.split(':').map(Number);
