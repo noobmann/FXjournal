@@ -15,7 +15,7 @@ let DB={
   sessions:S.get('sessions',[
     {id:'s1',name:'London',start:'08:00',end:'17:00',color:'#3b82f6'},
     {id:'s2',name:'New York',start:'13:00',end:'22:00',color:'#22c55e'},
-    {id:'s3',name:'Asian',start:'00:00',end:'09:00',color:'#f59e0b'},
+    {id:'s3',name:'Tokyo',start:'00:00',end:'09:00',color:'#f59e0b'},
     {id:'s4',name:'Sydney',start:'22:00',end:'07:00',color:'#a78bfa'},
   ]),
   checklist:S.get('checklist',['Structure confirmed on H4/Daily','Clear directional bias identified','Level (SBR/RBS/POI) identified','Entry criteria met','Trading session active','NOT entering on retracement','R:R minimum 1:2']),
@@ -106,7 +106,7 @@ function confirmAction(title,msg,cb){
 // ═══════════════════════════════════════════════════════════
 // NAV
 // ═══════════════════════════════════════════════════════════
-const TITLES={dash:'Dashboard',trades:'Trades',journal:'Journal',notes:'Notes',analytics:'Performance Analytics',accounts:'Accounts',rules:'Rules & Config',settings:'Settings',report:'AI Report'};
+const TITLES={dash:'Dashboard',trades:'Trades',journal:'Journal',notes:'Notes',analytics:'Performance Analytics',accounts:'Accounts',rules:'Rules & Config',settings:'Settings',report:'AI Report','market-hours':'Market Hours Tracker'};
 function nav(p){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.querySelector(`[data-p="${p}"]`)?.classList.add('active');
@@ -122,6 +122,7 @@ function nav(p){
   else if(p==='settings')loadSettings();
   else if(p==='notes')renderNotes();
   else if(p==='report')loadAISettings();
+  else if(p==='market-hours')renderMarketHours();
 }
 document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>nav(n.dataset.p)));
 
@@ -2624,6 +2625,259 @@ function tzLabel(){
   return labels[tz]||tz.split('/').pop();
 }
 
+// ═══════════════════════════════════════════════════════════
+// MARKET HOURS TRACKER
+// ═══════════════════════════════════════════════════════════
+const MAJOR_CITIES=[
+  {name:'New York',tz:'America/New_York',icon:'🗽'},
+  {name:'London',tz:'Europe/London',icon:'🏛️'},
+  {name:'Tokyo',tz:'Asia/Tokyo',icon:'🗼'},
+  {name:'Sydney',tz:'Australia/Sydney',icon:'🦘'},
+  {name:'Singapore',tz:'Asia/Singapore',icon:'🦁'},
+  {name:'Dubai',tz:'Asia/Dubai',icon:'🏙️'},
+];
+
+const SESSION_OVERLAPS=[
+  {name:'London-New York',sessions:['London','New York'],icon:'⚡'},
+  {name:'Tokyo-London',sessions:['Tokyo','London'],icon:'🌅'},
+  {name:'Sydney-Tokyo',sessions:['Sydney','Tokyo'],icon:'🌏'},
+];
+
+function renderMarketHours(){
+  updateMHClock();
+  renderMHSessions();
+  renderMHActiveSessions();
+  renderMHWorldClocks();
+  renderMHOverlaps();
+}
+
+function updateMHClock(){
+  const now=new Date();
+  const utcStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'UTC'});
+  const el=document.getElementById('mh-utc-clock');
+  if(el)el.textContent=utcStr;
+  
+  // Update status summary
+  const active=getActiveSessions();
+  const summaryEl=document.getElementById('mh-status-summary');
+  if(summaryEl){
+    if(active.length>0){
+      summaryEl.innerHTML=active.map(s=>`
+        <div class="mh-status-item">
+          <div class="mh-status-dot" style="background:${s.color};color:${s.color}"></div>
+          <div class="mh-status-info">
+            <div class="mh-status-name">${s.name} Session</div>
+            <div class="mh-status-desc">${s.start} - ${s.end} GMT</div>
+          </div>
+          <div class="mh-status-badge active">Open</div>
+        </div>
+      `).join('');
+    }else{
+      summaryEl.innerHTML=`
+        <div class="mh-status-item">
+          <div class="mh-status-dot" style="background:var(--t3);color:var(--t3)"></div>
+          <div class="mh-status-info">
+            <div class="mh-status-name">No Active Sessions</div>
+            <div class="mh-status-desc">Market is currently closed</div>
+          </div>
+          <div class="mh-status-badge closed">Closed</div>
+        </div>
+      `;
+    }
+  }
+}
+
+function renderMHSessions(){
+  const container=document.getElementById('mh-sessions-list');
+  if(!container)return;
+  
+  const now=new Date();
+  const utcHours=now.getUTCHours();
+  const utcMinutes=now.getUTCMinutes();
+  const currentTime=utcHours*60+utcMinutes;
+  
+  const sessions=DB.sessions.map(s=>{
+    const [sh,sm]=s.start.split(':').map(Number);
+    const [eh,em]=s.end.split(':').map(Number);
+    const startTime=sh*60+sm;
+    const endTime=eh*60+em;
+    
+    let isActive=false;
+    if(startTime<endTime){
+      isActive=currentTime>=startTime&&currentTime<endTime;
+    }else{
+      isActive=currentTime>=startTime||currentTime<endTime;
+    }
+    
+    // Calculate progress
+    let progress=0;
+    const totalDuration=endTime>startTime?endTime-startTime:(24*60-startTime+endTime);
+    let elapsed=0;
+    if(startTime<endTime){
+      elapsed=Math.max(0,Math.min(totalDuration,currentTime-startTime));
+    }else{
+      if(currentTime>=startTime){
+        elapsed=currentTime-startTime;
+      }else{
+        elapsed=(24*60-startTime)+currentTime;
+      }
+    }
+    progress=totalDuration>0?(elapsed/totalDuration)*100:0;
+    
+    return {session:s,isActive,progress,startDisplay:s.start,endDisplay:s.end};
+  });
+  
+  container.innerHTML=sessions.map(({session,isActive,progress})=>`
+    <div class="mh-session-row ${isActive?'active':''}">
+      <div class="mh-session-icon">${getSessionIcon(session.name)}</div>
+      <div class="mh-session-details">
+        <div class="mh-session-name">
+          ${session.name}
+          ${isActive?'<span style="font-size:8px;background:var(--green2);color:#fff;padding:2px 6px;border-radius:99px;font-weight:700">LIVE</span>':''}
+        </div>
+        <div class="mh-session-time">${session.start} - ${session.end} GMT</div>
+        <div class="mh-session-bar">
+          <div class="mh-session-fill" style="width:${progress}%;background:${session.color}"></div>
+        </div>
+        <div class="mh-session-meta">
+          <span>${isActive?'🟢 Open':'🔴 Closed'}</span>
+          <span>Progress: ${Math.round(progress)}%</span>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function getSessionIcon(name){
+  const icons={'London':'🇬🇧','New York':'🇺🇸','Tokyo':'🇯🇵','Sydney':'🇦🇺'};
+  return icons[name]||'🌍';
+}
+
+function renderMHActiveSessions(){
+  const container=document.getElementById('mh-active-sessions');
+  if(!container)return;
+  
+  const active=getActiveSessions();
+  if(active.length===0){
+    container.innerHTML=`
+      <div style="text-align:center;padding:30px;color:var(--t3)">
+        <div style="font-size:42px;margin-bottom:10px">😴</div>
+        <div style="font-size:14px;font-weight:600">All markets are closed</div>
+        <div style="font-size:12px;margin-top:5px">Next session starts soon</div>
+      </div>
+    `;
+    return;
+  }
+  
+  container.innerHTML=active.map(s=>{
+    const [eh,em]=s.end.split(':').map(Number);
+    const endTime=eh*60+em;
+    const now=new Date();
+    const currentTime=now.getUTCHours()*60+now.getUTCMinutes();
+    let remaining=endTime-currentTime;
+    if(remaining<0)remaining+=24*60;
+    const remHours=Math.floor(remaining/60);
+    const remMins=remaining%60;
+    
+    return `
+      <div class="mh-active-item">
+        <div class="mh-active-icon">${getSessionIcon(s.name)}</div>
+        <div class="mh-active-info">
+          <div class="mh-active-name">${s.name} Session</div>
+          <div class="mh-active-time">Closes at ${s.end} GMT</div>
+        </div>
+        <div class="mh-active-countdown">-${remHours.toString().padStart(2,'0')}:${remMins.toString().padStart(2,'0')}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderMHWorldClocks(){
+  const container=document.getElementById('mh-world-clocks');
+  if(!container)return;
+  
+  const now=new Date();
+  container.innerHTML=MAJOR_CITIES.map(city=>{
+    const timeStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:city.tz});
+    const dateStr=now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',timeZone:city.tz});
+    const dayOfWeek=now.toLocaleDateString('en-US',{weekday:'long',timeZone:city.tz}).toLowerCase();
+    const isWeekend=dayOfWeek.includes('saturday')||dayOfWeek.includes('sunday');
+    
+    return `
+      <div class="mh-world-item">
+        <div class="mh-world-city">${city.icon} ${city.name}</div>
+        <div class="mh-world-time">${timeStr}</div>
+        <div class="mh-world-date">${dateStr}</div>
+        <div class="mh-world-day ${isWeekend?'weekend':'weekday'}">${isWeekend?'Weekend':'Trading Day'}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderMHOverlaps(){
+  const container=document.getElementById('mh-overlaps');
+  if(!container)return;
+  
+  const now=new Date();
+  const currentTime=now.getUTCHours()*60+now.getUTCMinutes();
+  
+  container.innerHTML=`
+    <div class="mh-overlap-grid">
+      ${SESSION_OVERLAPS.map(overlap=>{
+        const sessionData=overlap.sessions.map(sessName=>{
+          const s=DB.sessions.find(x=>x.name===sessName);
+          if(!s)return null;
+          const [sh,sm]=s.start.split(':').map(Number);
+          const [eh,em]=s.end.split(':').map(Number);
+          return {name:sessName,start:sh*60+sm,end:eh*60+em,color:s.color};
+        }).filter(Boolean);
+        
+        if(sessionData.length<2)return '';
+        
+        // Find overlap window
+        const overlapStart=Math.max(sessionData[0].start,sessionData[1].start);
+        const overlapEnd=Math.min(sessionData[0].end,sessionData[1].end);
+        
+        let isLive=false;
+        let isUpcoming=false;
+        
+        if(overlapStart<overlapEnd){
+          isLive=currentTime>=overlapStart&&currentTime<overlapEnd;
+          isUpcoming=!isLive&&currentTime<overlapStart&&overlapStart-currentTime<120;
+        }
+        
+        const statusClass=isLive?'live':(isUpcoming?'upcoming':'');
+        const statusText=isLive?'LIVE NOW':(isUpcoming?'Starting Soon':'Closed');
+        
+        return `
+          <div class="mh-overlap-item ${!isLive&&!isUpcoming?'inactive':''}">
+            <div class="mh-overlap-title">${overlap.icon} ${overlap.name} Overlap</div>
+            <div class="mh-overlap-sessions">${overlap.sessions.join(' × ')}</div>
+            <div class="mh-overlap-time">${formatOverlapTime(overlapStart)} - ${formatOverlapTime(overlapEnd)} GMT</div>
+            <div class="mh-overlap-status ${statusClass}">${statusText}</div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function formatOverlapTime(minutes){
+  const h=Math.floor(minutes/60);
+  const m=minutes%60;
+  return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+}
+
+// Update market hours every second
+setInterval(()=>{
+  if(document.getElementById('page-market-hours')?.classList.contains('active')){
+    renderMarketHours();
+  }
+},1000);
+
+// ═══════════════════════════════════════════════════════════
+// INITIALIZATION
+// ═══════════════════════════════════════════════════════════
 function init(){
   try{
     const theme=DB.settings.theme||'amoled';

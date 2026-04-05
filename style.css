@@ -588,3 +588,72 @@ tbody td{padding:14px 16px;font-size:13px;color:var(--t1)}
 .ai-out ul{padding-left:18px;margin-bottom:10px}
 .ai-out li{margin-bottom:5px}
 .ai-out strong{color:var(--t0)}
+
+/* ═══ MARKET HOURS TRACKER ═══ */
+.mh-header{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.mh-clock-card{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border-s);border-radius:var(--r);padding:24px;text-align:center;position:relative;overflow:hidden}
+.mh-clock-card::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle,var(--accent-d) 0%,transparent 70%);animation:mhPulse 4s ease-in-out infinite}
+@keyframes mhPulse{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.1);opacity:.8}}
+.mh-clock-label{font-size:11px;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.mh-clock-time{font-family:'Geist Mono','JetBrains Mono',monospace;font-size:42px;font-weight:700;color:var(--t0);letter-spacing:-2px;line-height:1;text-shadow:0 0 20px var(--accent-g)}
+.mh-clock-sub{font-size:12px;color:var(--t3);margin-top:8px}
+.mh-status-summary{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.mh-status-item{display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg2);border-radius:var(--rs)}
+.mh-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px currentColor}
+.mh-status-info{flex:1}
+.mh-status-name{font-size:13px;font-weight:600;color:var(--t0)}
+.mh-status-desc{font-size:11px;color:var(--t3)}
+.mh-status-badge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:99px;text-transform:uppercase}
+.mh-status-badge.active{background:var(--green-d);color:var(--green2)}
+.mh-status-badge.closed{background:var(--red-d);color:var(--red2)}
+
+.mh-sessions-body{padding:16px}
+.mh-session-row{display:flex;align-items:center;gap:16px;padding:14px 16px;margin-bottom:10px;background:var(--bg2);border-radius:var(--rs);border:1px solid var(--border);transition:all .2s}
+.mh-session-row:hover{border-color:var(--border-s);transform:translateX(4px)}
+.mh-session-row.active{border-color:var(--green);background:var(--green-d)}
+.mh-session-icon{font-size:22px;width:36px;text-align:center;flex-shrink:0}
+.mh-session-details{flex:1;min-width:0}
+.mh-session-name{font-size:14px;font-weight:600;color:var(--t0);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.mh-session-time{font-size:11px;color:var(--t3);font-family:'Geist Mono',monospace}
+.mh-session-bar{height:6px;background:var(--bg3);border-radius:99px;overflow:hidden;margin-top:8px;position:relative}
+.mh-session-fill{height:100%;border-radius:99px;transition:width .5s ease;position:relative}
+.mh-session-fill::after{content:'';position:absolute;right:0;top:0;bottom:0;width:20px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3));animation:shimmer 2s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.mh-session-meta{display:flex;gap:12px;font-size:11px;color:var(--t3);margin-top:6px}
+.mh-session-meta span{display:flex;align-items:center;gap:4px}
+
+.mh-active-body{padding:12px}
+.mh-active-item{display:flex;align-items:center;gap:12px;padding:14px;background:linear-gradient(135deg,var(--green-d),var(--bg2));border:1px solid var(--green);border-radius:var(--rs);margin-bottom:10px;animation:activePulse 2s ease-in-out infinite}
+@keyframes activePulse{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.3)}50%{box-shadow:0 0 0 8px rgba(16,185,129,0)}}
+.mh-active-item:last-child{margin-bottom:0}
+.mh-active-icon{font-size:24px}
+.mh-active-info{flex:1}
+.mh-active-name{font-size:14px;font-weight:700;color:var(--green2)}
+.mh-active-time{font-size:11px;color:var(--t3);margin-top:2px}
+.mh-active-countdown{font-family:'Geist Mono',monospace;font-size:12px;font-weight:600;color:var(--gold2);background:var(--bg3);padding:4px 10px;border-radius:var(--rxs)}
+
+.mh-world-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;padding:16px}
+.mh-world-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rs);padding:16px;text-align:center;transition:all .2s}
+.mh-world-item:hover{border-color:var(--accent);transform:translateY(-2px)}
+.mh-world-city{font-size:12px;font-weight:600;color:var(--t2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.mh-world-time{font-family:'Geist Mono',monospace;font-size:24px;font-weight:700;color:var(--t0);line-height:1}
+.mh-world-date{font-size:11px;color:var(--t3);margin-top:4px}
+.mh-world-day{font-size:10px;font-weight:600;padding:3px 8px;border-radius:99px;margin-top:8px;display:inline-block}
+.mh-world-day.weekend{background:var(--red-d);color:var(--red2)}
+.mh-world-day.weekday{background:var(--green-d);color:var(--green2)}
+
+.mh-overlap-body{padding:16px}
+.mh-overlap-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.mh-overlap-item{background:linear-gradient(135deg,var(--gold-d),var(--bg2));border:1px solid var(--gold);border-radius:var(--rs);padding:16px;position:relative;overflow:hidden}
+.mh-overlap-item.inactive{opacity:.5;border-color:var(--border);background:var(--bg2)}
+.mh-overlap-item::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--gold),var(--orange))}
+.mh-overlap-title{font-size:13px;font-weight:700;color:var(--gold2);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.mh-overlap-sessions{font-size:11px;color:var(--t2);margin-bottom:10px}
+.mh-overlap-time{font-family:'Geist Mono',monospace;font-size:12px;color:var(--t0);font-weight:600}
+.mh-overlap-status{font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;display:inline-block;margin-top:8px}
+.mh-overlap-status.live{background:var(--red2);color:#fff;animation:blinkLive 1s infinite}
+.mh-overlap-status.upcoming{background:var(--accent-d);color:var(--accent2)}
+@keyframes blinkLive{0%,100%{opacity:1}50%{opacity:.5}}
+
+@media(max-width:900px){.mh-header{grid-template-columns:1fr}.mh-world-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.mh-world-grid{grid-template-columns:1fr}.mh-overlap-grid{grid-template-columns:1fr}}

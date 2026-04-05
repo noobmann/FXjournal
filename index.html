@@ -39,6 +39,7 @@
     <div class="nav-lbl">Analysis</div>
     <div class="nav-item" data-p="analytics"><span class="nav-ic">▦</span>Performance</div>
     <div class="nav-item" data-p="report"><span class="nav-ic">🤖</span>AI Report</div>
+    <div class="nav-item" data-p="market-hours"><span class="nav-ic">🕐</span>Market Hours</div>
   </div>
   <div class="nav-sec">
     <div class="nav-lbl">Manage</div>
@@ -361,6 +362,49 @@
             <div class="empty" style="padding:30px"><div class="empty-ic">📅</div><div class="empty-tl">Click a day</div><div class="empty-sub">Click any day on the calendar to see trades</div></div>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MARKET HOURS TRACKER ═══ -->
+  <div class="page" id="page-market-hours">
+    <div class="mh-header">
+      <div class="mh-clock-card">
+        <div class="mh-clock-label">Current UTC Time</div>
+        <div class="mh-clock-time" id="mh-utc-clock">--:--:--</div>
+        <div class="mh-clock-sub">Market sessions based on GMT/UTC</div>
+      </div>
+      <div class="mh-status-summary" id="mh-status-summary">
+        <!-- Dynamically populated -->
+      </div>
+    </div>
+    
+    <div class="g2" style="margin-bottom:16px">
+      <div class="card mh-sessions-card">
+        <div class="card-h"><span class="card-t">🌏 Forex Market Sessions</span></div>
+        <div class="card-b mh-sessions-body" id="mh-sessions-list">
+          <!-- Session bars will be rendered here -->
+        </div>
+      </div>
+      <div class="card mh-active-card">
+        <div class="card-h"><span class="card-t">🔴 Currently Active</span></div>
+        <div class="card-b mh-active-body" id="mh-active-sessions">
+          <!-- Active sessions list -->
+        </div>
+      </div>
+    </div>
+    
+    <div class="card mh-world-clock-card">
+      <div class="card-h"><span class="card-t">🕐 World Clock - Major Financial Centers</span></div>
+      <div class="mh-world-grid" id="mh-world-clocks">
+        <!-- World clocks -->
+      </div>
+    </div>
+    
+    <div class="card mh-overlap-card" style="margin-top:16px">
+      <div class="card-h"><span class="card-t">⚡ Session Overlaps (High Volatility)</span></div>
+      <div class="mh-overlap-body" id="mh-overlaps">
+        <!-- Overlap indicators -->
       </div>
     </div>
   </div>
