@@ -2634,6 +2634,74 @@ function tzLabel(){
   return labels[tz]||tz.split('/').pop();
 }
 
+// Get current time in user's timezone as minutes since midnight
+function getUserTimeMinutes(){
+  const tz=DB.settings.tz||'Asia/Kolkata';
+  const now=new Date();
+  const timeStr=now.toLocaleTimeString('en-US',{hour:'numeric',minute:'numeric',hour12:false,timeZone:tz});
+  const [h,m]=timeStr.split(':').map(Number);
+  return h*60+m;
+}
+
+// Check if a session (stored in GMT) is active in user's timezone
+function inSessionUserTZ(s){
+  const tz=DB.settings.tz||'Asia/Kolkata';
+  try{
+    const [sh,sm]=s.start.split(':').map(Number);
+    const [eh,em]=s.end.split(':').map(Number);
+    const now=new Date();
+    
+    // Convert session GMT times to user timezone
+    const startUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),sh,sm,0));
+    const endUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),eh,em,0));
+    
+    // Get hour/minute in user timezone
+    const startOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
+    const endOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
+    
+    const startTimeStr=startUtc.toLocaleTimeString('en-US',startOpts);
+    const endTimeStr=endUtc.toLocaleTimeString('en-US',endOpts);
+    
+    const [startH,startM]=startTimeStr.split(':').map(Number);
+    const [endH,endM]=endTimeStr.split(':').map(Number);
+    
+    const startTime=startH*60+startM;
+    const endTime=endH*60+endM;
+    const currentTime=getUserTimeMinutes();
+    
+    if(startTime<endTime){
+      return currentTime>=startTime&&currentTime<endTime;
+    }else{
+      return currentTime>=startTime||currentTime<endTime;
+    }
+  }catch{return false}
+}
+
+function getActiveSessionsInUserTZ(){
+  const tz=DB.settings.tz||'Asia/Kolkata';
+  const tzLabelStr=tzLabel();
+  const now=new Date();
+  
+  return DB.sessions.filter(s=>{
+    try{
+      const [sh,sm]=s.start.split(':').map(Number);
+      const [eh,em]=s.end.split(':').map(Number);
+      
+      // Convert session GMT times to user timezone
+      const startUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),sh,sm,0));
+      const endUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),eh,em,0));
+      
+      const startOpts={hour:'2-digit',minute:'2-digit',hour12:false,timeZone:tz};
+      const endOpts={hour:'2-digit',minute:'2-digit',hour12:false,timeZone:tz};
+      
+      s._userStart=startUtc.toLocaleTimeString('en-GB',startOpts);
+      s._userEnd=endUtc.toLocaleTimeString('en-GB',endOpts);
+      
+      return inSessionUserTZ(s);
+    }catch{return false}
+  }).map(s=>({...s,start:s._userStart,end:s._userEnd}));
+}
+
 // ═══════════════════════════════════════════════════════════
 // MARKET HOURS TRACKER
 // ═══════════════════════════════════════════════════════════
@@ -2652,6 +2720,14 @@ const SESSION_OVERLAPS=[
   {name:'Sydney-Tokyo',sessions:['Sydney','Tokyo'],icon:'🌏'},
 ];
 
+const MARKET_QUOTES=[
+  "Forget charts. Chill, learn, and grow harder. 📚",
+  "The best trade is sometimes no trade. Patience pays. ⏳",
+  "Markets close, but learning never stops. Keep studying! 💪",
+  "Rest today, conquer tomorrow. The market will always be there. 🎯",
+  "Success in trading comes from discipline, not constant action. 🧠"
+];
+
 function renderMarketHours(){
   updateMHClock();
   renderMHSessions();
@@ -2662,12 +2738,22 @@ function renderMarketHours(){
 
 function updateMHClock(){
   const now=new Date();
-  const utcStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'UTC'});
+  const tz=DB.settings.tz||'Asia/Kolkata';
+  const tzLabelStr=tzLabel();
+  const timeStr=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:tz});
   const el=document.getElementById('mh-utc-clock');
-  if(el)el.textContent=utcStr;
+  if(el)el.textContent=timeStr;
+  
+  // Update clock label with user's timezone
+  const labelEl=document.querySelector('.mh-clock-label');
+  if(labelEl)labelEl.textContent=`Current ${tzLabelStr} Time`;
+  
+  // Update clock sub text
+  const subEl=document.querySelector('.mh-clock-sub');
+  if(subEl)subEl.textContent=`Market sessions shown in ${tzLabelStr}`;
   
   // Update status summary
-  const active=getActiveSessions();
+  const active=getActiveSessionsInUserTZ();
   const summaryEl=document.getElementById('mh-status-summary');
   if(summaryEl){
     if(active.length>0){
@@ -2676,18 +2762,20 @@ function updateMHClock(){
           <div class="mh-status-dot" style="background:${s.color};color:${s.color}"></div>
           <div class="mh-status-info">
             <div class="mh-status-name">${s.name} Session</div>
-            <div class="mh-status-desc">${s.start} - ${s.end} GMT</div>
+            <div class="mh-status-desc">${s.start} - ${s.end} ${tzLabelStr}</div>
           </div>
           <div class="mh-status-badge active">Open</div>
         </div>
       `).join('');
     }else{
+      // Show random quote when market is closed
+      const randomQuote=MARKET_QUOTES[Math.floor(Math.random()*MARKET_QUOTES.length)];
       summaryEl.innerHTML=`
-        <div class="mh-status-item">
+        <div class="mh-status-item mh-quote-item">
           <div class="mh-status-dot" style="background:var(--t3);color:var(--t3)"></div>
           <div class="mh-status-info">
-            <div class="mh-status-name">No Active Sessions</div>
-            <div class="mh-status-desc">Market is currently closed</div>
+            <div class="mh-status-name">Market Closed</div>
+            <div class="mh-status-desc mh-quote-text">"${randomQuote}"</div>
           </div>
           <div class="mh-status-badge closed">Closed</div>
         </div>
@@ -2700,43 +2788,61 @@ function renderMHSessions(){
   const container=document.getElementById('mh-sessions-list');
   if(!container)return;
   
+  const tz=DB.settings.tz||'Asia/Kolkata';
+  const tzLabelStr=tzLabel();
   const now=new Date();
-  const utcHours=now.getUTCHours();
-  const utcMinutes=now.getUTCMinutes();
-  const currentTime=utcHours*60+utcMinutes;
+  const currentTime=getUserTimeMinutes();
   
   const sessions=DB.sessions.map(s=>{
-    const [sh,sm]=s.start.split(':').map(Number);
-    const [eh,em]=s.end.split(':').map(Number);
-    const startTime=sh*60+sm;
-    const endTime=eh*60+em;
-    
-    let isActive=false;
-    if(startTime<endTime){
-      isActive=currentTime>=startTime&&currentTime<endTime;
-    }else{
-      isActive=currentTime>=startTime||currentTime<endTime;
-    }
-    
-    // Calculate progress
-    let progress=0;
-    const totalDuration=endTime>startTime?endTime-startTime:(24*60-startTime+endTime);
-    let elapsed=0;
-    if(startTime<endTime){
-      elapsed=Math.max(0,Math.min(totalDuration,currentTime-startTime));
-    }else{
-      if(currentTime>=startTime){
-        elapsed=currentTime-startTime;
+    try{
+      const [sh,sm]=s.start.split(':').map(Number);
+      const [eh,em]=s.end.split(':').map(Number);
+      
+      // Convert session GMT times to user timezone
+      const startUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),sh,sm,0));
+      const endUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),eh,em,0));
+      
+      const startOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
+      const endOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
+      
+      const startTimeStr=startUtc.toLocaleTimeString('en-US',startOpts);
+      const endTimeStr=endUtc.toLocaleTimeString('en-US',endOpts);
+      
+      const [startH,startM]=startTimeStr.split(':').map(Number);
+      const [endH,endM]=endTimeStr.split(':').map(Number);
+      
+      const startTime=startH*60+startM;
+      const endTime=endH*60+endM;
+      
+      let isActive=false;
+      if(startTime<endTime){
+        isActive=currentTime>=startTime&&currentTime<endTime;
       }else{
-        elapsed=(24*60-startTime)+currentTime;
+        isActive=currentTime>=startTime||currentTime<endTime;
       }
+      
+      // Calculate progress
+      let progress=0;
+      const totalDuration=endTime>startTime?endTime-startTime:(24*60-startTime+endTime);
+      let elapsed=0;
+      if(startTime<endTime){
+        elapsed=Math.max(0,Math.min(totalDuration,currentTime-startTime));
+      }else{
+        if(currentTime>=startTime){
+          elapsed=currentTime-startTime;
+        }else{
+          elapsed=(24*60-startTime)+currentTime;
+        }
+      }
+      progress=totalDuration>0?(elapsed/totalDuration)*100:0;
+      
+      return {session:s,isActive,progress,startDisplay:startTimeStr,endDisplay:endTimeStr};
+    }catch{
+      return {session:s,isActive:false,progress:0,startDisplay:s.start,endDisplay:s.end};
     }
-    progress=totalDuration>0?(elapsed/totalDuration)*100:0;
-    
-    return {session:s,isActive,progress,startDisplay:s.start,endDisplay:s.end};
   });
   
-  container.innerHTML=sessions.map(({session,isActive,progress})=>`
+  container.innerHTML=sessions.map(({session,isActive,progress,startDisplay,endDisplay})=>`
     <div class="mh-session-row ${isActive?'active':''}">
       <div class="mh-session-icon">${getSessionIcon(session.name)}</div>
       <div class="mh-session-details">
@@ -2744,7 +2850,7 @@ function renderMHSessions(){
           ${session.name}
           ${isActive?'<span style="font-size:8px;background:var(--green2);color:#fff;padding:2px 6px;border-radius:99px;font-weight:700">LIVE</span>':''}
         </div>
-        <div class="mh-session-time">${session.start} - ${session.end} GMT</div>
+        <div class="mh-session-time">${startDisplay} - ${endDisplay} ${tzLabelStr}</div>
         <div class="mh-session-bar">
           <div class="mh-session-fill" style="width:${progress}%;background:${session.color}"></div>
         </div>
@@ -2766,7 +2872,9 @@ function renderMHActiveSessions(){
   const container=document.getElementById('mh-active-sessions');
   if(!container)return;
   
-  const active=getActiveSessions();
+  const tz=DB.settings.tz||'Asia/Kolkata';
+  const tzLabelStr=tzLabel();
+  const active=getActiveSessionsInUserTZ();
   if(active.length===0){
     container.innerHTML=`
       <div style="text-align:center;padding:30px;color:var(--t3)">
@@ -2781,8 +2889,7 @@ function renderMHActiveSessions(){
   container.innerHTML=active.map(s=>{
     const [eh,em]=s.end.split(':').map(Number);
     const endTime=eh*60+em;
-    const now=new Date();
-    const currentTime=now.getUTCHours()*60+now.getUTCMinutes();
+    const currentTime=getUserTimeMinutes();
     let remaining=endTime-currentTime;
     if(remaining<0)remaining+=24*60;
     const remHours=Math.floor(remaining/60);
@@ -2793,7 +2900,7 @@ function renderMHActiveSessions(){
         <div class="mh-active-icon">${getSessionIcon(s.name)}</div>
         <div class="mh-active-info">
           <div class="mh-active-name">${s.name} Session</div>
-          <div class="mh-active-time">Closes at ${s.end} GMT</div>
+          <div class="mh-active-time">Closes at ${s.end} ${tzLabelStr}</div>
         </div>
         <div class="mh-active-countdown">-${remHours.toString().padStart(2,'0')}:${remMins.toString().padStart(2,'0')}</div>
       </div>
@@ -2827,8 +2934,10 @@ function renderMHOverlaps(){
   const container=document.getElementById('mh-overlaps');
   if(!container)return;
   
+  const tz=DB.settings.tz||'Asia/Kolkata';
+  const tzLabelStr=tzLabel();
   const now=new Date();
-  const currentTime=now.getUTCHours()*60+now.getUTCMinutes();
+  const currentTime=getUserTimeMinutes();
   
   container.innerHTML=`
     <div class="mh-overlap-grid">
@@ -2836,9 +2945,28 @@ function renderMHOverlaps(){
         const sessionData=overlap.sessions.map(sessName=>{
           const s=DB.sessions.find(x=>x.name===sessName);
           if(!s)return null;
-          const [sh,sm]=s.start.split(':').map(Number);
-          const [eh,em]=s.end.split(':').map(Number);
-          return {name:sessName,start:sh*60+sm,end:eh*60+em,color:s.color};
+          
+          try{
+            const [sh,sm]=s.start.split(':').map(Number);
+            const [eh,em]=s.end.split(':').map(Number);
+            
+            // Convert session GMT times to user timezone
+            const startUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),sh,sm,0));
+            const endUtc=new Date(Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate(),eh,em,0));
+            
+            const startOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
+            const endOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
+            
+            const startTimeStr=startUtc.toLocaleTimeString('en-US',startOpts);
+            const endTimeStr=endUtc.toLocaleTimeString('en-US',endOpts);
+            
+            const [startH,startM]=startTimeStr.split(':').map(Number);
+            const [endH,endM]=endTimeStr.split(':').map(Number);
+            
+            return {name:sessName,start:startH*60+startM,end:endH*60+endM,color:s.color,startDisplay:startTimeStr,endDisplay:endTimeStr};
+          }catch{
+            return null;
+          }
         }).filter(Boolean);
         
         if(sessionData.length<2)return '';
@@ -2862,7 +2990,7 @@ function renderMHOverlaps(){
           <div class="mh-overlap-item ${!isLive&&!isUpcoming?'inactive':''}">
             <div class="mh-overlap-title">${overlap.icon} ${overlap.name} Overlap</div>
             <div class="mh-overlap-sessions">${overlap.sessions.join(' × ')}</div>
-            <div class="mh-overlap-time">${formatOverlapTime(overlapStart)} - ${formatOverlapTime(overlapEnd)} GMT</div>
+            <div class="mh-overlap-time">${sessionData[0].startDisplay} - ${sessionData[1].endDisplay} ${tzLabelStr}</div>
             <div class="mh-overlap-status ${statusClass}">${statusText}</div>
           </div>
         `;

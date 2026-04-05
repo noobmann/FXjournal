@@ -607,10 +607,12 @@ tbody td{padding:14px 16px;font-size:13px;color:var(--t1)}
 .mh-clock-sub{font-size:12px;color:var(--t3);margin-top:8px}
 .mh-status-summary{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;display:flex;flex-direction:column;justify-content:center;gap:12px}
 .mh-status-item{display:flex;align-items:center;gap:12px;padding:10px;background:var(--bg2);border-radius:var(--rs)}
+.mh-status-item.mh-quote-item{background:linear-gradient(135deg,rgba(29,78,216,0.08),rgba(147,51,234,0.08));border:1px solid var(--accent-d)}
 .mh-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px currentColor}
 .mh-status-info{flex:1}
 .mh-status-name{font-size:13px;font-weight:600;color:var(--t0)}
 .mh-status-desc{font-size:11px;color:var(--t3)}
+.mh-status-desc.mh-quote-text{font-size:12px;color:var(--t1);font-style:italic;line-height:1.6;text-align:center;padding:8px 0}
 .mh-status-badge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:99px;text-transform:uppercase}
 .mh-status-badge.active{background:var(--green-d);color:var(--green2)}
 .mh-status-badge.closed{background:var(--red-d);color:var(--red2)}
