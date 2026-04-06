@@ -23,24 +23,24 @@ let DB={
 };
 
 // ═══════════════════════════════════════════════════════════
-// REAL MARKET SESSIONS (FIXED - Independent of user settings)
-// These are the ACTUAL market hours in their local timezones
-// DO NOT modify these - they represent real global market hours
+// REAL MARKET SESSIONS (FIXED - Based on actual market hours in UTC)
+// These are the ACTUAL market hours converted from local time to UTC
+// Source: Real forex market session times
 // ═══════════════════════════════════════════════════════════
 const REAL_MARKET_SESSIONS = [
-  {id:'m1',name:'Sydney',start:'09:00',end:'17:00',color:'#a78bfa',localTz:'Australia/Sydney'},
-  {id:'m2',name:'Tokyo',start:'09:00',end:'17:00',color:'#f59e0b',localTz:'Asia/Tokyo'},
-  {id:'m3',name:'London',start:'08:00',end:'17:00',color:'#3b82f6',localTz:'Europe/London'},
-  {id:'m4',name:'New York',start:'09:30',end:'16:00',color:'#22c55e',localTz:'America/New_York'},
+  {id:'m1',name:'Sydney',start:'22:00',end:'07:00',color:'#a78bfa',localTz:'UTC',note:'Sydney: 22:00-07:00 UTC (Oct-Apr), 21:00-06:00 UTC (Apr-Oct DST)'},
+  {id:'m2',name:'Tokyo',start:'00:00',end:'09:00',color:'#f59e0b',localTz:'UTC',note:'Tokyo: 00:00-09:00 UTC (No DST in Japan)'},
+  {id:'m3',name:'London',start:'08:00',end:'17:00',color:'#3b82f6',localTz:'UTC',note:'London: 08:00-17:00 UTC (Mar-Oct), 07:00-16:00 UTC (Oct-Mar DST)'},
+  {id:'m4',name:'New York',start:'13:00',end:'22:00',color:'#22c55e',localTz:'UTC',note:'New York: 13:00-22:00 UTC (Nov-Mar), 12:00-21:00 UTC (Mar-Nov DST)'},
 ];
 
-// Initialize default sessions if empty (for Rules section)
+// Initialize default sessions if empty (for Rules section) - using UTC times
 if(DB.sessions.length===0){
   DB.sessions=[
-    {id:'s1',name:'London',start:'08:00',end:'17:00',color:'#3b82f6',localTz:'Europe/London'},
-    {id:'s2',name:'New York',start:'09:30',end:'16:00',color:'#22c55e',localTz:'America/New_York'},
-    {id:'s3',name:'Tokyo',start:'09:00',end:'17:00',color:'#f59e0b',localTz:'Asia/Tokyo'},
-    {id:'s4',name:'Sydney',start:'09:00',end:'17:00',color:'#a78bfa',localTz:'Australia/Sydney'},
+    {id:'s1',name:'London',start:'08:00',end:'17:00',color:'#3b82f6',localTz:'UTC'},
+    {id:'s2',name:'New York',start:'13:00',end:'22:00',color:'#22c55e',localTz:'UTC'},
+    {id:'s3',name:'Tokyo',start:'00:00',end:'09:00',color:'#f59e0b',localTz:'UTC'},
+    {id:'s4',name:'Sydney',start:'22:00',end:'07:00',color:'#a78bfa',localTz:'UTC'},
   ];
 }
 
@@ -2693,32 +2693,43 @@ function convertTimeToTargetTZ(timeStr, sourceTz, targetTz){
 }
 
 // Get session start/end times in user's timezone as formatted strings and minutes
+// Sessions are stored in UTC, so we convert from UTC to user's timezone
 function getSessionTimesInUserTZ(s, userTz){
   const sessionLocalTz = s.localTz || 'UTC';
   const [sh, sm] = s.start.split(':').map(Number);
   const [eh, em] = s.end.split(':').map(Number);
   const now = new Date();
   
-  // Create date objects for session start/end in the session's local timezone
-  const sourceDateStr = now.toLocaleString('en-US', { timeZone: sessionLocalTz });
-  const sourceDate = new Date(sourceDateStr);
+  // Since sessions are stored in UTC, create UTC times for start and end
+  const sessionStartUTC = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    sh, sm, 0, 0
+  ));
   
-  const sessionStart = new Date(sourceDateStr);
-  sessionStart.setHours(sh, sm, 0, 0);
+  const sessionEndUTC = new Date(Date.UTC(
+    now.getUTCFullYear(),
+    now.getUTCMonth(),
+    now.getUTCDate(),
+    eh, em, 0, 0
+  ));
   
-  const sessionEnd = new Date(sourceDateStr);
-  sessionEnd.setHours(eh, em, 0, 0);
+  // Handle overnight sessions (end time is next day in UTC)
+  if (sessionEndUTC <= sessionStartUTC) {
+    sessionEndUTC.setUTCDate(sessionEndUTC.getUTCDate() + 1);
+  }
   
-  // Format times in user's timezone
+  // Convert UTC times to user's timezone for display
   const startOpts = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: userTz };
   const endOpts = { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: userTz };
   
-  const startDisplay = sessionStart.toLocaleTimeString('en-GB', startOpts);
-  const endDisplay = sessionEnd.toLocaleTimeString('en-GB', endOpts);
+  const startDisplay = sessionStartUTC.toLocaleTimeString('en-GB', startOpts);
+  const endDisplay = sessionEndUTC.toLocaleTimeString('en-GB', endOpts);
   
   // Get minutes since midnight in user's timezone
-  const startInUser = new Date(sessionStart.toLocaleString('en-US', { timeZone: userTz }));
-  const endInUser = new Date(sessionEnd.toLocaleString('en-US', { timeZone: userTz }));
+  const startInUser = new Date(sessionStartUTC.toLocaleString('en-US', { timeZone: userTz }));
+  const endInUser = new Date(sessionEndUTC.toLocaleString('en-US', { timeZone: userTz }));
   
   const startMinutes = startInUser.getHours() * 60 + startInUser.getMinutes();
   const endMinutes = endInUser.getHours() * 60 + endInUser.getMinutes();
@@ -2929,21 +2940,29 @@ function renderMHActiveSessions(){
     const tzLabelStr=tzLabel();
     const currentTime=getUserTimeMinutes();
     
-    // Parse the end time (already in user's TZ from getActiveSessionsInUserTZ)
+    // Parse the start and end times (already in user's TZ from getActiveSessionsInUserTZ)
+    const [startH, startM] = s.start.split(':').map(Number);
     const [endH, endM] = s.end.split(':').map(Number);
+    const startTimeInUserTz = startH * 60 + startM;
     const endTimeInUserTz = endH * 60 + endM;
     
-    let remaining = endTimeInUserTz - currentTime;
-    // Handle overnight sessions
-    if(remaining < 0) {
-      // Check if this is an overnight session by comparing start and end
-      const [startH, startM] = s.start.split(':').map(Number);
-      const startTimeInUserTz = startH * 60 + startM;
-      if(startTimeInUserTz > endTimeInUserTz) {
-        // Overnight session: add 24 hours
-        remaining += 24 * 60;
+    let remaining = 0;
+    
+    // Calculate remaining time based on whether session spans midnight
+    if (startTimeInUserTz < endTimeInUserTz) {
+      // Normal session (doesn't span midnight)
+      remaining = endTimeInUserTz - currentTime;
+      if (remaining < 0) remaining = 0;
+    } else {
+      // Overnight session (spans midnight)
+      if (currentTime >= startTimeInUserTz) {
+        // After start time on day 1
+        remaining = (24 * 60 - currentTime) + endTimeInUserTz;
+      } else if (currentTime < endTimeInUserTz) {
+        // Before end time on day 2
+        remaining = endTimeInUserTz - currentTime;
       } else {
-        // Session already closed today, show 0
+        // Between end and start (session not active)
         remaining = 0;
       }
     }
