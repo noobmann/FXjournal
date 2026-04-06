@@ -167,7 +167,41 @@ function updateClock(){
 }
 function getGMTHHMM(){const n=new Date();return n.getUTCHours()*100+n.getUTCMinutes()}
 function timeToNum(hm){const[h,m]=hm.split(':').map(Number);return h*100+m}
-function inSession(s){const n=getGMTHHMM(),st2=timeToNum(s.start),en=timeToNum(s.end);return st2<en?n>=st2&&n<en:n>=st2||n<en}
+function inSession(s){
+  const userTz=DB.settings.tz||'Asia/Kolkata';
+  const sessionLocalTz=s.localTz||'UTC';
+  try{
+    const [sh,sm]=s.start.split(':').map(Number);
+    const [eh,em]=s.end.split(':').map(Number);
+    const now=new Date();
+    
+    // Create date objects for session start/end in the session's local timezone
+    const sessionStart=new Date(now.toLocaleString('en-US',{timeZone:sessionLocalTz}));
+    sessionStart.setHours(sh,sm,0,0);
+    
+    const sessionEnd=new Date(now.toLocaleString('en-US',{timeZone:sessionLocalTz}));
+    sessionEnd.setHours(eh,em,0,0);
+    
+    // Convert to user timezone
+    const startInUserTz=new Date(sessionStart.toLocaleString('en-US',{timeZone:userTz}));
+    const endInUserTz=new Date(sessionEnd.toLocaleString('en-US',{timeZone:userTz}));
+    
+    const startH=startInUserTz.getHours();
+    const startM=startInUserTz.getMinutes();
+    const endH=endInUserTz.getHours();
+    const endM=endInUserTz.getMinutes();
+    
+    const startTime=startH*100+startM;
+    const endTime=endH*100+endM;
+    const currentTime=getGMTHHMM();
+    
+    if(startTime<endTime){
+      return currentTime>=startTime&&currentTime<endTime;
+    }else{
+      return currentTime>=startTime||currentTime<endTime;
+    }
+  }catch{return false}
+}
 function getActiveSessions(){return DB.sessions.filter(s=>inSession(s))}
 function updateSessionBadge(){
   const act=getActiveSessions();
@@ -2837,6 +2871,7 @@ function renderMHSessions(){
       const startOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
       const endOpts={hour:'numeric',minute:'numeric',hour12:false,timeZone:tz};
       const startTimeStr=sessionStart.toLocaleTimeString('en-US',startOpts);
+      const endTimeStr=sessionEnd.toLocaleTimeString('en-US',endOpts);
       
       const [startH,startM]=startTimeStr.split(':').map(Number);
       const [endH,endM]=endTimeStr.split(':').map(Number);
@@ -2917,10 +2952,14 @@ function renderMHActiveSessions(){
   }
   
   container.innerHTML=active.map(s=>{
+    const tz=DB.settings.tz||'Asia/Kolkata';
+    const now=new Date();
+    // Get session end time in user's timezone
     const [eh,em]=s.end.split(':').map(Number);
-    const endTime=eh*60+em;
+    const endTimeInUserTz=eh*60+em;
     const currentTime=getUserTimeMinutes();
-    let remaining=endTime-currentTime;
+    
+    let remaining=endTimeInUserTz-currentTime;
     if(remaining<0)remaining+=24*60;
     const remHours=Math.floor(remaining/60);
     const remMins=remaining%60;
@@ -2932,7 +2971,7 @@ function renderMHActiveSessions(){
           <div class="mh-active-name">${s.name} Session</div>
           <div class="mh-active-time">Closes at ${s.end} ${tzLabelStr}</div>
         </div>
-        <div class="mh-active-countdown">-${remHours.toString().padStart(2,'0')}:${remMins.toString().padStart(2,'0')}</div>
+        <div class="mh-active-countdown">${remHours.toString().padStart(2,'0')}:${remMins.toString().padStart(2,'0')}</div>
       </div>
     `;
   }).join('');
